@@ -20,7 +20,7 @@ async function setup() {
 }
 
 const slotsOf = (html: string) =>
-  [...html.matchAll(/<span class="btn">(\d{2}:\d{2})<\/span>/g)].map((m) => m[1])
+  [...html.matchAll(/<span class="chip">(\d{2}:\d{2})<\/span>/g)].map((m) => m[1])
 
 describe('consulta de horários', () => {
   it('oferece um horário por slot num dia vazio', async () => {

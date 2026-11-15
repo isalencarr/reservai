@@ -2,12 +2,15 @@ import { type Context, Hono } from 'hono'
 import { normalizeEmail } from '../../domain/email.ts'
 import { normalizePhone } from '../../domain/phone.ts'
 import { clientIp } from '../../domain/privacy.ts'
+import { isThemeMode, paletteOf } from '../../domain/theme.ts'
 import { createAuthEventRepo } from '../../repos/auth-events.ts'
+import { createCompanyRepo } from '../../repos/companies.ts'
 import { createProviderRepo, type ProviderInput } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
 import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
 import { Acessos } from '../views/acessos.tsx'
+import { Aparencia } from '../views/aparencia.tsx'
 import { EntrarEquipe, type EntrarEquipeProps, Painel } from '../views/equipe.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Pessoas, type PessoasProps } from '../views/pessoas.tsx'
@@ -19,31 +22,24 @@ function safeNext(raw: unknown): string {
 
 export function equipeRoutes({ db, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
+  const companyRepo = createCompanyRepo(db)
   const eventRepo = createAuthEventRepo(db)
   const app = new Hono<TenantEnv>()
   app.use('*', requireArea('staff'))
 
-  const render = (
-    c: Context<TenantEnv>,
-    props: EntrarEquipeProps,
-    companyName: string,
-    status = 200,
-  ) =>
+  const render = (c: Context<TenantEnv>, props: EntrarEquipeProps, status = 200) =>
     c.html(
       c.req.header('HX-Request') ? (
         <EntrarEquipe {...props} />
       ) : (
-        <Layout title="Entrar" companyName={companyName}>
+        <Layout title="Entrar" company={c.get('company')}>
           <EntrarEquipe {...props} />
         </Layout>
       ),
       status as 200,
     )
 
-  app.get('/entrar', (c) => {
-    const company = c.get('company')
-    return render(c, { next: safeNext(c.req.query('next')) }, company.name)
-  })
+  app.get('/entrar', (c) => render(c, { next: safeNext(c.req.query('next')) }))
 
   /**
    * O link só é emitido para e-mail que já está na equipe ativa deste salão:
@@ -54,7 +50,7 @@ export function equipeRoutes({ db, auth }: Deps) {
     const body = await c.req.parseBody()
     const next = safeNext(body.next)
     const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
-    if (!email) return render(c, { next, error: 'E-mail inválido.' }, company.name, 422)
+    if (!email) return render(c, { next, error: 'E-mail inválido.' }, 422)
 
     const staff = await providerRepo.findByEmail(company.id, email)
     if (staff?.active) {
@@ -74,7 +70,7 @@ export function equipeRoutes({ db, auth }: Deps) {
       })
     }
 
-    return render(c, { next, sentTo: email }, company.name)
+    return render(c, { next, sentTo: email })
   })
 
   const painel = new Hono<StaffEnv>()
@@ -283,6 +279,34 @@ export function equipeRoutes({ db, auth }: Deps) {
     )
   })
 
+  /** Aparência é identidade do salão: fica com o dono. */
+  const aparencia = new Hono<StaffEnv>()
+  aparencia.use('*', staffMiddleware(auth, providerRepo))
+  aparencia.use('*', requireOwner())
+
+  aparencia.get('/', (c) => {
+    const company = c.get('company')
+    return c.html(
+      <StaffLayout title="Aparência" company={company} staff={c.get('staff')} active="aparencia">
+        <Aparencia company={company} />
+      </StaffLayout>,
+    )
+  })
+
+  aparencia.post('/', async (c) => {
+    const company = c.get('company')
+    const body = await c.req.parseBody()
+
+    // Só cor da lista e só tom conhecido: a paleta é gerada, não digitada.
+    const cor = typeof body.cor === 'string' ? paletteOf(body.cor)?.seed : undefined
+    const tom = isThemeMode(body.tom) ? body.tom : undefined
+    if (!cor && !tom) return c.text('Escolha uma cor ou um tom.', 422)
+
+    await companyRepo.updateTheme(company.id, cor ?? company.themeSeed, tom ?? company.themeMode)
+    return c.redirect('/equipe/aparencia', 303)
+  })
+
+  app.route('/aparencia', aparencia)
   app.route('/acessos', acessos)
   app.route('/pessoas', pessoas)
   app.route('/', painel)

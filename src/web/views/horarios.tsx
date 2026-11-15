@@ -75,7 +75,7 @@ export const Horarios: FC<HorariosProps> = ({
       <ul class="slots">
         {starts.map((start) => (
           <li key={start.toISOString()}>
-            <span class="btn">{formatTime(start, timeZone)}</span>
+            <span class="chip">{formatTime(start, timeZone)}</span>
           </li>
         ))}
       </ul>

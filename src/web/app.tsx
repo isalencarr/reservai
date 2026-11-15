@@ -60,7 +60,7 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
       return c.redirect(staff ? '/equipe' : '/equipe/entrar', 303)
     }
     return c.html(
-      <Layout title="Início" companyName={company.name}>
+      <Layout title="Início" company={company}>
         <h2>Bem-vindo</h2>
         <ul class="people">
           <li>

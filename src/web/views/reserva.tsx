@@ -122,7 +122,7 @@ export const Reserva: FC<ReservaProps> = (props) => {
                     <li key={start.toISOString()}>
                       <button
                         type="button"
-                        class="btn"
+                        class="chip"
                         hx-get={`${comPrestador}&data=${date}&hora=${start.toISOString()}`}
                       >
                         {formatTime(start, timeZone)}
@@ -154,7 +154,7 @@ export const Reserva: FC<ReservaProps> = (props) => {
             <input type="hidden" name="servico" value={service.id} />
             <input type="hidden" name="prestador" value={provider.id} />
             <input type="hidden" name="hora" value={chosen.toISOString()} />
-            <button type="submit" class="btn">
+            <button type="submit" class="btn filled">
               Pedir este horário
             </button>
           </form>

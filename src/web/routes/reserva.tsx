@@ -85,12 +85,12 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
     })
   }
 
-  const render = (c: Context<CustomerEnv>, view: ReservaProps, companyName: string) =>
+  const render = (c: Context<CustomerEnv>, view: ReservaProps) =>
     c.html(
       c.req.header('HX-Request') ? (
         <Reserva {...view} />
       ) : (
-        <Layout title="Agendar" companyName={companyName}>
+        <Layout title="Agendar" company={c.get('company')}>
           <Reserva {...view} />
         </Layout>
       ),
@@ -121,22 +121,18 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
         ? starts.find((s) => s.getTime() === wanted.getTime())
         : undefined
 
-    return render(
-      c,
-      {
-        customerName: customer.name,
-        timeZone,
-        services,
-        service,
-        providers,
-        provider,
-        days: dayOptions(localDate(new Date(), timeZone)),
-        date,
-        starts,
-        chosen,
-      },
-      company.name,
-    )
+    return render(c, {
+      customerName: customer.name,
+      timeZone,
+      services,
+      service,
+      providers,
+      provider,
+      days: dayOptions(localDate(new Date(), timeZone)),
+      date,
+      starts,
+      chosen,
+    })
   })
 
   async function meus(c: Context<CustomerEnv>, error?: string, status = 200) {
@@ -155,7 +151,7 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
       c.req.header('HX-Request') ? (
         <Meus {...view} />
       ) : (
-        <Layout title="Meus horários" companyName={company.name}>
+        <Layout title="Meus horários" company={company}>
           <Meus {...view} />
         </Layout>
       ),

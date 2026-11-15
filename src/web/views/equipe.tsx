@@ -33,7 +33,7 @@ export const EntrarEquipe: FC<EntrarEquipeProps> = ({ next, error, sentTo }) => 
           E-mail
           <input type="email" name="email" required autocomplete="email" />
         </label>
-        <button type="submit" class="btn">
+        <button type="submit" class="btn filled">
           Receber link
         </button>
       </form>

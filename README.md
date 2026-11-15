@@ -51,6 +51,17 @@ ESLint entra só com `@typescript-eslint/no-deprecated`, que precisa dos tipos d
 projeto para ver chamada de API obsoleta. Por isso o TypeScript está fixado na
 linha 6: o typescript-eslint ainda não suporta a 7.
 
+## Aparência
+
+A folha de estilo (`public/app.css`) é Material 3 escrito à mão: forma,
+tipografia, elevação e camada de estado. As cores não estão nela — vêm de
+variáveis `--md-*` que o servidor injeta por salão, geradas por
+`@material/material-color-utilities` a partir de uma cor-semente. Trocar a cor
+do salão muda o app inteiro, para a equipe e para o cliente.
+
+Não usamos biblioteca de componentes: MUI é React e o nosso front é HTML com
+HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
+
 ## Como está organizado
 
 - `src/domain/` — regras puras (tempo, jornada, grade do dia). Sem banco, sem HTTP.
@@ -108,3 +119,6 @@ recebe o link na hora.
 12. Quem entra na equipe nasce com jornada de segunda a sábado, 9h–12h e 13h–18h.
 13. Entrada, saída e tentativa recusada ficam registradas com e-mail mascarado e
     IP truncado, visíveis em `/equipe/acessos`.
+14. A interface segue o Material 3 (Material You). O salão escolhe uma cor da
+    lista e o tom (claro, escuro ou automático) em `/equipe/aparencia`; a paleta
+    inteira é gerada pelo algoritmo oficial do Google.

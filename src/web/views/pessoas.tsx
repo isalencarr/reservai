@@ -86,7 +86,7 @@ const Editar: FC<{ pessoa: Provider; me: Provider; error?: string }> = ({ pessoa
         {error ? <p class="error">{error}</p> : null}
         <Campos pessoa={pessoa} />
         <div class="actions">
-          <button type="submit" class="btn">
+          <button type="submit" class="btn filled">
             Salvar
           </button>
           {pessoa.active ? (
@@ -130,7 +130,7 @@ export const Pessoas: FC<PessoasProps> = ({ items, me, editing, error }) => (
         <strong>Nova pessoa</strong>
         {error && !editing ? <p class="error">{error}</p> : null}
         <Campos />
-        <button type="submit" class="btn">
+        <button type="submit" class="btn filled">
           Adicionar
         </button>
       </form>

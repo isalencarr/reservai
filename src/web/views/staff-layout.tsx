@@ -1,5 +1,6 @@
 import type { FC, PropsWithChildren } from 'hono/jsx'
 import type { Company, Provider } from '../../db/schema.ts'
+import { themeCss } from '../../domain/theme.ts'
 
 export type StaffSection =
   | 'agendas'
@@ -9,6 +10,7 @@ export type StaffSection =
   | 'clientes'
   | 'pessoas'
   | 'acessos'
+  | 'aparencia'
 
 type Item = { key: StaffSection; label: string; href: string; ownerOnly?: boolean }
 
@@ -25,6 +27,7 @@ function items(staff: Provider): Item[] {
     { key: 'clientes', label: 'Clientes', href: '/clientes', ownerOnly: true },
     { key: 'pessoas', label: 'Equipe', href: '/equipe/pessoas', ownerOnly: true },
     { key: 'acessos', label: 'Acessos', href: '/equipe/acessos', ownerOnly: true },
+    { key: 'aparencia', label: 'Aparência', href: '/equipe/aparencia', ownerOnly: true },
   ].filter((item) => !item.ownerOnly || staff.role === 'owner') as Item[]
 }
 
@@ -43,6 +46,8 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>{`${title} · ${company.name}`}</title>
+      {/* O CSS é gerado pelo servidor a partir de uma cor da nossa lista. */}
+      <style dangerouslySetInnerHTML={{ __html: themeCss(company.themeSeed, company.themeMode) }} />
       <link rel="stylesheet" href="/assets/app.css" />
       <script src="/assets/htmx.js" defer />
     </head>

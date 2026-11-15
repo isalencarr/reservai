@@ -20,6 +20,11 @@ export const companies = sqliteTable('companies', {
   slug: text('slug').notNull().unique(),
   host: text('host').notNull().unique(),
   timezone: text('timezone').notNull().default('America/Sao_Paulo'),
+  /** Cor-semente do Material You: a paleta inteira é gerada a partir dela. */
+  themeSeed: text('theme_seed').notNull().default('#6750A4'),
+  themeMode: text('theme_mode', { enum: ['auto', 'light', 'dark'] })
+    .notNull()
+    .default('auto'),
   createdAt: timestamp('created_at')
     .notNull()
     .$defaultFn(() => new Date()),

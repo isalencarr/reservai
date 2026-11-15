@@ -22,22 +22,19 @@ export function entrarRoutes(db: Db, notifier: Notifier) {
   const app = new Hono<TenantEnv>()
   app.use('*', requireArea('customer'))
 
-  const render = (c: Context<TenantEnv>, props: EntrarProps, companyName: string, status = 200) =>
+  const render = (c: Context<TenantEnv>, props: EntrarProps, status = 200) =>
     c.html(
       c.req.header('HX-Request') ? (
         <Entrar {...props} />
       ) : (
-        <Layout title="Entrar" companyName={companyName}>
+        <Layout title="Entrar" company={c.get('company')}>
           <Entrar {...props} />
         </Layout>
       ),
       status as 200,
     )
 
-  app.get('/', (c) => {
-    const company = c.get('company')
-    return render(c, { next: safeNext(c.req.query('next')) }, company.name)
-  })
+  app.get('/', (c) => render(c, { next: safeNext(c.req.query('next')) }))
 
   app.post('/', async (c) => {
     const company = c.get('company')
@@ -46,9 +43,9 @@ export function entrarRoutes(db: Db, notifier: Notifier) {
     const name = typeof body.nome === 'string' ? body.nome.trim() : ''
     const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
 
-    if (name.length < 2) return render(c, { next, error: 'Escreva seu nome.' }, company.name, 422)
+    if (name.length < 2) return render(c, { next, error: 'Escreva seu nome.' }, 422)
     if (!phone) {
-      return render(c, { next, error: 'Telefone inválido. Use DDD e número.' }, company.name, 422)
+      return render(c, { next, error: 'Telefone inválido. Use DDD e número.' }, 422)
     }
 
     const code = generateCode()
@@ -62,7 +59,7 @@ export function entrarRoutes(db: Db, notifier: Notifier) {
     })
     await notifier.send({ kind: 'access-code', to: phone, code })
 
-    return render(c, { next, phone }, company.name)
+    return render(c, { next, phone })
   })
 
   app.post('/codigo', async (c) => {
@@ -72,27 +69,22 @@ export function entrarRoutes(db: Db, notifier: Notifier) {
     const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
     const typed = typeof body.codigo === 'string' ? body.codigo.replace(/\D/g, '') : ''
 
-    if (!phone) return render(c, { next, error: 'Comece de novo, por favor.' }, company.name, 422)
+    if (!phone) return render(c, { next, error: 'Comece de novo, por favor.' }, 422)
 
     const active = await codeRepo.findActive(company.id, phone, 'customer', new Date())
     if (!active) {
-      return render(c, { next, error: 'O código venceu. Peça outro.' }, company.name, 422)
+      return render(c, { next, error: 'O código venceu. Peça outro.' }, 422)
     }
 
     if (active.attempts + 1 >= CODE_MAX_ATTEMPTS && active.codeHash !== hashCode(typed)) {
       // Erros demais queimam o código: sem isso, dá para tentar os seis dígitos até acertar.
       await codeRepo.clear(company.id, phone, 'customer')
-      return render(
-        c,
-        { next, error: 'Muitas tentativas. Peça um código novo.' },
-        company.name,
-        422,
-      )
+      return render(c, { next, error: 'Muitas tentativas. Peça um código novo.' }, 422)
     }
 
     if (active.codeHash !== hashCode(typed)) {
       await codeRepo.registerAttempt(active.id)
-      return render(c, { next, phone, error: 'Código errado.' }, company.name, 422)
+      return render(c, { next, phone, error: 'Código errado.' }, 422)
     }
 
     const customer = await customerRepo.upsert(company.id, phone, active.name)

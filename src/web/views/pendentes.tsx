@@ -52,7 +52,7 @@ export const Pendentes: FC<PendentesProps> = ({
             <div class="actions">
               <button
                 type="button"
-                class="btn"
+                class="btn filled"
                 hx-post={`/pendentes/${providerId}/${item.id}/confirmar`}
               >
                 Confirmar

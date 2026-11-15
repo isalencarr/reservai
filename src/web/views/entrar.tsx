@@ -31,7 +31,7 @@ export const Entrar: FC<EntrarProps> = ({ next, error, phone }) => (
           />
         </label>
         <div class="actions">
-          <button type="submit" class="btn">
+          <button type="submit" class="btn filled">
             Entrar
           </button>
           <button type="button" class="btn ghost" hx-get={`/entrar?next=${next}`}>
@@ -58,7 +58,7 @@ export const Entrar: FC<EntrarProps> = ({ next, error, phone }) => (
             placeholder="(11) 98888-0001"
           />
         </label>
-        <button type="submit" class="btn">
+        <button type="submit" class="btn filled">
           Receber código
         </button>
       </form>

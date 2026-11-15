@@ -43,6 +43,13 @@
       "when": 1794775746949,
       "tag": "0005_registro-de-acesso",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794776677346,
+      "tag": "0006_tema-do-salao",
+      "breakpoints": true
     }
   ]
 }

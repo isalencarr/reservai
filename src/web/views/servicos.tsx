@@ -76,7 +76,7 @@ const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = (
         <Campos service={row.service} />
         <Equipe providers={providers} marked={row.providerIds} />
         <div class="actions">
-          <button type="submit" class="btn">
+          <button type="submit" class="btn filled">
             Salvar
           </button>
           <button
@@ -106,7 +106,7 @@ export const Servicos: FC<ServicosProps> = ({ items, providers, editing, error }
         {error && !editing ? <p class="error">{error}</p> : null}
         <Campos />
         <Equipe providers={providers} marked={[]} />
-        <button type="submit" class="btn">
+        <button type="submit" class="btn filled">
           Adicionar
         </button>
       </form>
