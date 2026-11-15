@@ -3,6 +3,7 @@ import { formatPhone } from '../../domain/phone.ts'
 import { formatWhen } from '../../domain/time.ts'
 import type { CustomerEntry } from '../../repos/appointments.ts'
 import type { CustomerRow } from '../../repos/customers.ts'
+import { Icon } from './icon.tsx'
 
 export type ClientesProps = {
   items: CustomerRow[]
@@ -56,12 +57,20 @@ const Historico: FC<{
 
 export const Clientes: FC<ClientesProps> = ({ items, query, timeZone, viewing }) => (
   <section id="clientes" hx-target="#clientes" hx-swap="outerHTML">
-    <h2>Carteira</h2>
+    <div class="hero">
+      <Icon name="group" class="hero-icon" />
+      <strong>
+        {items.length} {items.length === 1 ? 'cliente' : 'clientes'}
+      </strong>
+      <span class="hero-sub">{query ? `encontrados para "${query}"` : 'na carteira do salão'}</span>
+    </div>
     <p class="muted">Os clientes são do salão. O profissional vê apenas nome e horário.</p>
 
     <form class="card" hx-get="/clientes" hx-trigger="submit, input from:find input delay:400ms">
       <label class="search">
-        Buscar por nome ou telefone
+        <span class="search-label">
+          <Icon name="search" /> Buscar por nome ou telefone
+        </span>
         <input type="search" name="q" value={query} placeholder="Maria ou 11988880001" />
       </label>
     </form>
@@ -75,7 +84,8 @@ export const Clientes: FC<ClientesProps> = ({ items, query, timeZone, viewing })
             <div>
               <span class="who">{customer.name}</span>
               <span class="what">
-                {formatPhone(customer.phone)} · {customer.visits} agendamento(s)
+                <Icon name="call" /> {formatPhone(customer.phone)} · {customer.visits}{' '}
+                agendamento(s)
               </span>
             </div>
             <button type="button" class="link" hx-get={`/clientes?ver=${customer.id}`}>

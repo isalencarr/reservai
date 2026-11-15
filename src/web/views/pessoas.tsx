@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
 import { formatPhone } from '../../domain/phone.ts'
+import { Icon } from './icon.tsx'
 
 export type PessoasProps = {
   items: Provider[]
@@ -131,6 +132,7 @@ export const Pessoas: FC<PessoasProps> = ({ items, me, editing, error }) => (
         {error && !editing ? <p class="error">{error}</p> : null}
         <Campos />
         <button type="submit" class="btn filled">
+          <Icon name="add" />
           Adicionar
         </button>
       </form>

@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import { remainingMinutes } from '../../domain/booking.ts'
 import { formatWhen } from '../../domain/time.ts'
 import type { PendingEntry } from '../../repos/appointments.ts'
+import { Icon } from './icon.tsx'
 
 export type PendentesProps = {
   providerId: string
@@ -28,15 +29,18 @@ export const Pendentes: FC<PendentesProps> = ({
   items,
 }) => (
   <section id="fila" hx-target="#fila" hx-swap="outerHTML">
-    <div class="daybar">
-      <div class="today">
-        <strong>Pedidos aguardando você</strong>
-        <span>{providerName}</span>
-      </div>
-      <a class="btn" href={`/agenda/${providerId}`}>
-        Agenda
-      </a>
+    <div class="hero">
+      <Icon name="pending_actions" class="hero-icon" />
+      <strong>
+        {items.length} {items.length === 1 ? 'pedido' : 'pedidos'}
+      </strong>
+      <span class="hero-sub">aguardando resposta de {providerName}</span>
     </div>
+
+    <p class="muted">
+      Sem resposta dentro do prazo, o horário volta a ser oferecido.{' '}
+      <a href={`/agenda/${providerId}`}>Ver a agenda</a>
+    </p>
 
     {items.length === 0 ? (
       <p class="empty">Nenhum pedido na fila.</p>
@@ -55,6 +59,7 @@ export const Pendentes: FC<PendentesProps> = ({
                 class="btn filled"
                 hx-post={`/pendentes/${providerId}/${item.id}/confirmar`}
               >
+                <Icon name="check" />
                 Confirmar
               </button>
               <button
@@ -62,6 +67,7 @@ export const Pendentes: FC<PendentesProps> = ({
                 class="btn danger"
                 hx-post={`/pendentes/${providerId}/${item.id}/recusar`}
               >
+                <Icon name="close" />
                 Recusar
               </button>
             </div>

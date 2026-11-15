@@ -6,7 +6,14 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!node_modules", "!data", "!src/db/migrations", "!bun.lock"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!data",
+      "!src/db/migrations",
+      "!bun.lock",
+      "!public/icons.svg"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -24,7 +31,8 @@
       },
       "style": {
         "useConst": "error",
-        "noNonNullAssertion": "error"
+        "noNonNullAssertion": "error",
+        "noDescendingSpecificity": "off"
       }
     }
   },

@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Provider, Service } from '../../db/schema.ts'
 import { formatPrice } from '../../domain/money.ts'
+import { Icon } from './icon.tsx'
 
 export type ServiceRow = { service: Service; providerIds: string[] }
 
@@ -107,6 +108,7 @@ export const Servicos: FC<ServicosProps> = ({ items, providers, editing, error }
         <Campos />
         <Equipe providers={providers} marked={[]} />
         <button type="submit" class="btn filled">
+          <Icon name="add" />
           Adicionar
         </button>
       </form>

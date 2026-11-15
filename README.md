@@ -53,11 +53,17 @@ linha 6: o typescript-eslint ainda não suporta a 7.
 
 ## Aparência
 
-A folha de estilo (`public/app.css`) é Material 3 escrito à mão: forma,
-tipografia, elevação e camada de estado. As cores não estão nela — vêm de
+A folha de estilo (`public/app.css`) é Material 3 Expressive escrito à mão:
+cantos grandes, tipografia pesada, blocos de destaque coloridos, listas em
+grupo conectado, menu em pílulas e a resposta física no toque (o canto afrouxa,
+o botão encolhe). As cores não estão nela — vêm de
 variáveis `--md-*` que o servidor injeta por salão, geradas por
 `@material/material-color-utilities` a partir de uma cor-semente. Trocar a cor
 do salão muda o app inteiro, para a equipe e para o cliente.
+
+Os ícones são os Material Symbols oficiais, montados em um sprite local por
+`bun run icons` — nada vem da internet em tempo de execução. Para acrescentar
+um ícone, inclua o nome na lista de `scripts/icons.ts` e rode o comando.
 
 Não usamos biblioteca de componentes: MUI é React e o nosso front é HTML com
 HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
@@ -122,3 +128,10 @@ recebe o link na hora.
 14. A interface segue o Material 3 (Material You). O salão escolhe uma cor da
     lista e o tom (claro, escuro ou automático) em `/equipe/aparencia`; a paleta
     inteira é gerada pelo algoritmo oficial do Google.
+
+### Uma regra de lint desligada
+
+`style/noDescendingSpecificity` está desligada no `biome.json`. Ela acusa
+qualquer `.componente span` escrito depois de outro `.outro span`, o que em uma
+folha organizada por componente acontece o tempo todo e só empurra para nomes
+de classe artificiais. O resto do gate continua valendo, warnings inclusive.

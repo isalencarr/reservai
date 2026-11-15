@@ -57,6 +57,7 @@ export interface AppointmentRepo {
   listDay(providerId: string, start: Date, end: Date): Promise<DayEntry[]>
   listPending(companyId: string, providerId: string): Promise<PendingEntry[]>
   listByCustomer(companyId: string, customerId: string): Promise<CustomerEntry[]>
+  countPendingByProvider(companyId: string): Promise<Record<string, number>>
   expireOverdue(now: Date, companyId?: string): Promise<NotifyTarget[]>
   setStatus(
     companyId: string,
@@ -158,6 +159,18 @@ export function createAppointmentRepo(db: Db): AppointmentRepo {
         .innerJoin(providers, eq(appointments.providerId, providers.id))
         .where(and(eq(appointments.companyId, companyId), eq(appointments.customerId, customerId)))
         .orderBy(asc(appointments.startsAt))
+    },
+
+    /** Quantos pedidos esperam resposta em cada agenda, para o painel avisar
+     * sem precisar abrir uma por uma. */
+    async countPendingByProvider(companyId) {
+      const rows = await db
+        .select({ providerId: appointments.providerId, total: sql<number>`count(*)` })
+        .from(appointments)
+        .where(and(eq(appointments.companyId, companyId), eq(appointments.status, 'pending')))
+        .groupBy(appointments.providerId)
+
+      return Object.fromEntries(rows.map((r) => [r.providerId, Number(r.total)]))
     },
 
     async expireOverdue(now, companyId) {

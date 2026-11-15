@@ -3,6 +3,7 @@ import { normalizeEmail } from '../../domain/email.ts'
 import { normalizePhone } from '../../domain/phone.ts'
 import { clientIp } from '../../domain/privacy.ts'
 import { isThemeMode, paletteOf } from '../../domain/theme.ts'
+import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createAuthEventRepo } from '../../repos/auth-events.ts'
 import { createCompanyRepo } from '../../repos/companies.ts'
 import { createProviderRepo, type ProviderInput } from '../../repos/providers.ts'
@@ -23,6 +24,7 @@ function safeNext(raw: unknown): string {
 export function equipeRoutes({ db, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const companyRepo = createCompanyRepo(db)
+  const appointmentRepo = createAppointmentRepo(db)
   const eventRepo = createAuthEventRepo(db)
   const app = new Hono<TenantEnv>()
   app.use('*', requireArea('staff'))
@@ -85,7 +87,11 @@ export function equipeRoutes({ db, auth }: Deps) {
 
     return c.html(
       <StaffLayout title="Agendas" company={company} staff={staff} active="agendas">
-        <Painel staff={staff} providers={await providerRepo.listByCompany(company.id)} />
+        <Painel
+          staff={staff}
+          providers={await providerRepo.listByCompany(company.id)}
+          pending={await appointmentRepo.countPendingByProvider(company.id)}
+        />
       </StaffLayout>,
     )
   })

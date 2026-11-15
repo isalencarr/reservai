@@ -1,6 +1,7 @@
 import type { FC, PropsWithChildren } from 'hono/jsx'
 import type { Company, Provider } from '../../db/schema.ts'
 import { themeCss } from '../../domain/theme.ts'
+import { Icon } from './icon.tsx'
 
 export type StaffSection =
   | 'agendas'
@@ -12,7 +13,13 @@ export type StaffSection =
   | 'acessos'
   | 'aparencia'
 
-type Item = { key: StaffSection; label: string; href: string; ownerOnly?: boolean }
+type Item = {
+  key: StaffSection
+  label: string
+  href: string
+  icon: string
+  ownerOnly?: boolean
+}
 
 function items(staff: Provider): Item[] {
   return [
@@ -20,14 +27,39 @@ function items(staff: Provider): Item[] {
       key: 'agendas',
       label: staff.role === 'owner' ? 'Agendas' : 'Minha agenda',
       href: staff.role === 'owner' ? '/equipe' : `/agenda/${staff.id}`,
+      icon: 'calendar_month',
     },
-    { key: 'pedidos', label: 'Pedidos', href: `/pendentes/${staff.id}` },
-    { key: 'horarios', label: 'Horários', href: '/horarios' },
-    { key: 'servicos', label: 'Serviços', href: '/servicos', ownerOnly: true },
-    { key: 'clientes', label: 'Clientes', href: '/clientes', ownerOnly: true },
-    { key: 'pessoas', label: 'Equipe', href: '/equipe/pessoas', ownerOnly: true },
-    { key: 'acessos', label: 'Acessos', href: '/equipe/acessos', ownerOnly: true },
-    { key: 'aparencia', label: 'Aparência', href: '/equipe/aparencia', ownerOnly: true },
+    { key: 'pedidos', label: 'Pedidos', href: `/pendentes/${staff.id}`, icon: 'pending_actions' },
+    { key: 'horarios', label: 'Horários', href: '/horarios', icon: 'schedule' },
+    {
+      key: 'servicos',
+      label: 'Serviços',
+      href: '/servicos',
+      icon: 'content_cut',
+      ownerOnly: true,
+    },
+    { key: 'clientes', label: 'Clientes', href: '/clientes', icon: 'group', ownerOnly: true },
+    {
+      key: 'pessoas',
+      label: 'Equipe',
+      href: '/equipe/pessoas',
+      icon: 'badge',
+      ownerOnly: true,
+    },
+    {
+      key: 'acessos',
+      label: 'Acessos',
+      href: '/equipe/acessos',
+      icon: 'shield_person',
+      ownerOnly: true,
+    },
+    {
+      key: 'aparencia',
+      label: 'Aparência',
+      href: '/equipe/aparencia',
+      icon: 'palette',
+      ownerOnly: true,
+    },
   ].filter((item) => !item.ownerOnly || staff.role === 'owner') as Item[]
 }
 
@@ -54,13 +86,17 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
     <body>
       <header class="app">
         <div class="wrap">
-          <h1>{company.name}</h1>
+          <h1>
+            <Icon name="storefront" />
+            {company.name}
+          </h1>
           <span>
             {staff.name}
             {staff.role === 'owner' ? ' · dono' : ''}
           </span>
           <form class="signout" hx-post="/equipe/sair">
             <button type="submit" class="link">
+              <Icon name="logout" />
               sair
             </button>
           </form>
@@ -71,9 +107,10 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
               <a
                 key={item.key}
                 href={item.href}
-                class={item.key === active ? 'on' : ''}
+                class={`menu-link ${item.key === active ? 'on' : ''}`}
                 aria-current={item.key === active ? 'page' : undefined}
               >
+                <Icon name={item.icon} />
                 {item.label}
               </a>
             ))}

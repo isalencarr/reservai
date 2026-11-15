@@ -7,12 +7,12 @@
  * ========================================================================= */
 
 :root {
-  /* forma */
-  --shape-xs: 4px;
-  --shape-sm: 8px;
-  --shape-md: 12px;
-  --shape-lg: 16px;
-  --shape-xl: 28px;
+  /* forma: o M3 Expressive trabalha com cantos bem maiores e variados */
+  --shape-xs: 8px;
+  --shape-sm: 12px;
+  --shape-md: 20px;
+  --shape-lg: 28px;
+  --shape-xl: 36px;
   --shape-full: 999px;
 
   /* elevação */
@@ -20,8 +20,9 @@
   --elev-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
   --elev-3: 0 4px 8px 3px rgb(0 0 0 / 0.15), 0 1px 3px rgb(0 0 0 / 0.3);
 
-  /* movimento */
+  /* movimento: a mola curta é o que dá a sensação física do Expressive */
   --motion: 200ms cubic-bezier(0.2, 0, 0, 1);
+  --motion-spring: 320ms cubic-bezier(0.3, 1.4, 0.5, 1);
 
   --gutter: 16px;
 }
@@ -45,18 +46,25 @@ body {
 
 h1 {
   margin: 0;
-  font-size: 1.375rem;
-  font-weight: 500;
-  line-height: 1.75rem;
-  letter-spacing: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 2.125rem;
+  letter-spacing: -0.02em;
 }
 
 h2 {
-  margin: 28px 0 12px;
-  font-size: 1.375rem;
-  font-weight: 400;
-  line-height: 1.75rem;
-  letter-spacing: 0;
+  margin: 32px 0 16px;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 2.375rem;
+  letter-spacing: -0.03em;
+}
+
+h3 {
+  margin: 28px 0 10px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .muted,
@@ -68,6 +76,20 @@ small {
 
 a {
   color: var(--md-primary);
+}
+
+/* --- ícones --- */
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: currentcolor;
+}
+
+.icon.big {
+  width: 24px;
+  height: 24px;
 }
 
 /* --- estrutura --- */
@@ -90,30 +112,61 @@ header.app .wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-top: 16px;
+  padding-top: 20px;
   padding-bottom: 16px;
 }
 
-header.app span {
+header.app h1 {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+header.app h1 .icon {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: var(--shape-full);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+header.app .wrap > span {
+  display: none;
+  flex: 1;
   color: var(--md-on-surface-variant);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 560px) {
+  header.app .wrap > span {
+    display: block;
+  }
 }
 
 /* --- camada de estado: o jeito do M3 de mostrar foco e toque --- */
 
 .btn,
 .link,
-.people a,
+.people .item,
 .people button,
-.menu a {
+.menu-link {
   position: relative;
   isolation: isolate;
 }
 
 .btn::before,
-.people a::before,
+.people .item::before,
 .people button::before,
-.menu a::before {
+.menu-link::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -125,14 +178,14 @@ header.app span {
 }
 
 .btn:hover::before,
-.people a:hover::before,
+.people .item:hover::before,
 .people button:hover::before,
-.menu a:hover::before {
+.menu-link:hover::before {
   opacity: 0.08;
 }
 
 .btn:active::before,
-.people a:active::before,
+.people .item:active::before,
 .people button:active::before {
   opacity: 0.12;
 }
@@ -149,18 +202,27 @@ header.app span {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 48px;
   padding: 0 24px;
-  border: 1px solid var(--md-outline);
+  border: 1px solid var(--md-outline-variant);
   border-radius: var(--shape-full);
   background: transparent;
   color: var(--md-primary);
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.006rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    border-radius var(--motion-spring),
+    transform var(--motion-spring);
+}
+
+/* O canto que afrouxa no toque é a assinatura do Expressive. */
+.btn:active {
+  border-radius: var(--shape-md);
+  transform: scale(0.97);
 }
 
 .btn.filled {
@@ -211,12 +273,42 @@ header.app span {
   text-decoration: underline;
 }
 
+/* --- bloco de destaque: o jeito do Expressive de abrir uma tela --- */
+
+.hero {
+  display: grid;
+  gap: 4px;
+  margin: 20px 0 8px;
+  padding: 24px;
+  border-radius: var(--shape-xl);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.hero strong {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 2.25rem;
+  letter-spacing: -0.03em;
+}
+
+.hero-sub {
+  font-size: 0.9375rem;
+  opacity: 0.9;
+}
+
+.hero-icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+}
+
 /* --- superfícies --- */
 
 .card {
-  padding: 16px;
+  padding: 20px;
   border: 0;
-  border-radius: var(--shape-md);
+  border-radius: var(--shape-lg);
   background: var(--md-surface-container-low);
   color: var(--md-on-surface);
 }
@@ -226,7 +318,9 @@ header.app span {
 }
 
 .empty {
-  padding: 32px 0;
+  padding: 40px 24px;
+  border-radius: var(--shape-lg);
+  background: var(--md-surface-container);
   color: var(--md-on-surface-variant);
   text-align: center;
 }
@@ -265,7 +359,7 @@ select {
   padding: 0 16px;
   border: 0;
   border-bottom: 1px solid var(--md-on-surface-variant);
-  border-radius: var(--shape-xs) var(--shape-xs) 0 0;
+  border-radius: var(--shape-sm) var(--shape-sm) 0 0;
   background: var(--md-surface-container-highest);
   color: var(--md-on-surface);
   font: inherit;
@@ -306,45 +400,123 @@ input[type="checkbox"] {
 
 .people {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .people li {
-  display: grid;
+  display: flex;
   gap: 4px;
 }
 
-.people a,
+.people .item {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ação lateral do item: o grupo colado é o padrão do Expressive */
+.side {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 72px;
+  border-radius: var(--shape-xs);
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface-variant);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.side.alert {
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.people li:first-child .side {
+  border-radius: var(--shape-xs) var(--shape-lg) var(--shape-xs) var(--shape-xs);
+}
+
+.people li:last-child .side {
+  border-radius: var(--shape-xs) var(--shape-xs) var(--shape-lg) var(--shape-xs);
+}
+
+.people .item,
 .people button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
-  min-height: 72px;
-  padding: 12px 16px;
+  min-height: 76px;
+  padding: 14px 20px;
   border: 0;
-  border-radius: var(--shape-md);
-  background: var(--md-surface-container-low);
+  border-radius: var(--shape-xs);
+  background: var(--md-surface-container-high);
   color: var(--md-on-surface);
   font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    border-radius var(--motion-spring),
+    background var(--motion);
+}
+
+/* Grupo conectado: as pontas é que ganham o canto grande. */
+.people li:first-child .item,
+.people li:first-child button {
+  border-radius: var(--shape-lg) var(--shape-xs) var(--shape-xs) var(--shape-lg);
+}
+
+.people li:last-child .item,
+.people li:last-child button {
+  border-radius: var(--shape-xs) var(--shape-lg) var(--shape-lg) var(--shape-xs);
+}
+
+.people li:only-child .item,
+.people li:only-child button {
+  border-radius: var(--shape-lg);
+}
+
+.people .item:hover,
+.people button:hover {
+  border-radius: var(--shape-lg);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* avatar do item de lista: o ícone dentro de um círculo colorido */
+.avatar {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: var(--shape-full);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.people .text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.people .text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .people small {
   color: var(--md-on-surface-variant);
-}
-
-.queue-link {
-  justify-self: start;
-  padding: 0 16px 4px;
-  color: var(--md-primary);
-  font-size: 0.8125rem;
 }
 
 /* --- menu da área da equipe --- */
@@ -356,26 +528,35 @@ input[type="checkbox"] {
 
 .menu-items {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   max-width: 880px;
   margin: 0 auto;
-  padding: 0 var(--gutter);
+  padding: 0 var(--gutter) 12px;
   white-space: nowrap;
 }
 
-.menu a {
-  padding: 14px 12px;
-  border-bottom: 3px solid transparent;
-  border-radius: var(--shape-xs) var(--shape-xs) 0 0;
+.menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--shape-full);
   color: var(--md-on-surface-variant);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
+  transition:
+    background var(--motion),
+    border-radius var(--motion-spring);
 }
 
-.menu a.on {
-  border-bottom-color: var(--md-primary);
-  color: var(--md-primary);
+.menu-link.on {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.menu-link:active {
+  border-radius: var(--shape-sm);
 }
 
 header.app .wrap .signout {
@@ -386,10 +567,26 @@ header.app .wrap .signout {
 
 .daybar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 20px 0 16px;
+  margin: 24px 0 20px;
+  padding: 8px 12px;
+  border-radius: var(--shape-xl);
+  background: var(--md-surface-container);
+}
+
+.daybar .today {
+  flex: 1;
+  min-width: 0;
+}
+
+.daybar .btn {
+  min-width: 48px;
+  padding: 0 12px;
+  border-color: transparent;
+  background: var(--md-surface-container-highest);
 }
 
 .daybar .today {
@@ -398,9 +595,13 @@ header.app .wrap .signout {
 
 .daybar .today strong {
   display: block;
-  font-size: 1rem;
-  font-weight: 500;
-  text-transform: capitalize;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.daybar .today strong::first-letter {
+  text-transform: uppercase;
 }
 
 .daybar .today span {
@@ -451,7 +652,7 @@ header.app .wrap .signout {
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  padding: 12px 16px;
+  padding: 14px 20px;
   border-radius: var(--shape-md);
   background: var(--md-primary-container);
   color: var(--md-on-primary-container);
@@ -468,8 +669,9 @@ header.app .wrap .signout {
 }
 
 .appt .who {
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .appt .what {
@@ -483,8 +685,17 @@ header.app .wrap .signout {
 
 .btn.ghost {
   width: 100%;
-  border: 1px dashed var(--md-outline-variant);
+  min-height: 44px;
+  border: 0;
+  background: var(--md-surface-container);
   color: var(--md-on-surface-variant);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn.ghost:hover {
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
 }
 
 /* --- formulários em grade --- */
@@ -541,19 +752,29 @@ header.app .wrap .signout {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 40px;
-  border: 1px solid var(--md-outline);
+  min-height: 48px;
+  border: 0;
   border-radius: var(--shape-sm);
-  background: transparent;
-  color: var(--md-on-surface);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+  transition:
+    border-radius var(--motion-spring),
+    transform var(--motion-spring);
 }
 
 .chip:hover {
-  background: var(--md-surface-container-high);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.chip:active {
+  border-radius: var(--shape-full);
+  transform: scale(0.94);
 }
 
 .days {
@@ -571,9 +792,13 @@ header.app .wrap .signout {
   flex-direction: column;
   gap: 0;
   width: 100%;
-  min-height: 64px;
+  min-height: 72px;
   padding: 0;
+  border-color: transparent;
   border-radius: var(--shape-lg);
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  font-size: 1.0625rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -584,8 +809,9 @@ header.app .wrap .signout {
 
 .day.on {
   border-color: transparent;
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  border-radius: var(--shape-full);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
 }
 
 .day.on small {
@@ -611,18 +837,29 @@ header.app .wrap .signout {
 .queue .who,
 .wallet .who {
   display: block;
-  font-weight: 500;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .queue .what,
 .wallet .what {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--md-on-surface-variant);
   font-size: 0.875rem;
 }
 
 .queue .deadline {
-  color: var(--md-tertiary);
+  justify-self: start;
+  margin-top: 4px;
+  padding: 4px 12px;
+  border-radius: var(--shape-full);
+  background: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
   font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .queue .actions {
@@ -700,6 +937,12 @@ header.app .wrap .signout {
   gap: 6px;
 }
 
+.search-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* --- modal --- */
 
 .overlay {
@@ -747,29 +990,37 @@ header.app .wrap .signout {
 .palette {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--shape-md);
-  background: var(--md-surface-container-low);
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--shape-lg);
+  background: var(--md-surface-container-high);
   color: var(--md-on-surface);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
   cursor: pointer;
+  transition:
+    border-radius var(--motion-spring),
+    transform var(--motion-spring);
+}
+
+.palette:active {
+  border-radius: var(--shape-sm);
+  transform: scale(0.97);
 }
 
 .palette.on {
-  border-color: var(--md-primary);
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
 }
 
 .swatch {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--shape-full);
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
 }
 
 .modes {
@@ -814,12 +1065,6 @@ header.app .wrap .signout {
   .catalog-layout {
     grid-template-columns: 1fr 320px;
   }
-}
-
-h3 {
-  margin: 24px 0 8px;
-  font-size: 1rem;
-  font-weight: 500;
 }
 
 .modes li {

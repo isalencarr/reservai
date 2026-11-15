@@ -18,10 +18,12 @@ import { reservaRoutes } from './routes/reserva.tsx'
 import { servicosRoutes } from './routes/servicos.tsx'
 import { staffOf } from './staff.ts'
 import { requireArea, type TenantEnv, tenantMiddleware } from './tenant.ts'
+import { Icon } from './views/icon.tsx'
 import { Layout } from './views/layout.tsx'
 
 const ASSETS: Record<string, { path: string; type: string }> = {
   'app.css': { path: 'public/app.css', type: 'text/css; charset=utf-8' },
+  'icons.svg': { path: 'public/icons.svg', type: 'image/svg+xml' },
   'htmx.js': {
     path: 'node_modules/htmx.org/dist/htmx.min.js',
     type: 'text/javascript; charset=utf-8',
@@ -64,9 +66,13 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
         <h2>Bem-vindo</h2>
         <ul class="people">
           <li>
-            <a href="/reserva">
-              <span>Agendar um horário</span>
-              <small>escolha serviço, profissional e dia</small>
+            <a class="item" href="/reserva">
+              <Icon name="event_available" class="avatar" />
+              <span class="text">
+                <span>Agendar um horário</span>
+                <small>escolha serviço, profissional e dia</small>
+              </span>
+              <Icon name="chevron_right" />
             </a>
           </li>
         </ul>

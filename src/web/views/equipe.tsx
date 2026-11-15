@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
+import { Icon } from './icon.tsx'
 
 export type EntrarEquipeProps = {
   next: string
@@ -34,6 +35,7 @@ export const EntrarEquipe: FC<EntrarEquipeProps> = ({ next, error, sentTo }) => 
           <input type="email" name="email" required autocomplete="email" />
         </label>
         <button type="submit" class="btn filled">
+          <Icon name="mail" />
           Receber link
         </button>
       </form>
@@ -44,23 +46,40 @@ export const EntrarEquipe: FC<EntrarEquipeProps> = ({ next, error, sentTo }) => 
 export type PainelProps = {
   staff: Provider
   providers: Provider[]
+  /** Pedidos esperando resposta em cada agenda. */
+  pending: Record<string, number>
 }
 
-export const Painel: FC<PainelProps> = ({ staff, providers }) => (
+export const Painel: FC<PainelProps> = ({ staff, providers, pending }) => (
   <section id="painel">
-    <h2>Agendas</h2>
+    <div class="hero">
+      <Icon name="calendar_month" class="hero-icon" />
+      <strong>
+        {providers.length} {providers.length === 1 ? 'agenda' : 'agendas'}
+      </strong>
+      <span class="hero-sub">escolha de quem você quer ver o dia</span>
+    </div>
     <ul class="people">
       {providers.map((p) => (
         <li key={p.id}>
-          <a href={`/agenda/${p.id}`}>
-            <span>
-              {p.name}
-              {p.id === staff.id ? ' · você' : ''}
+          <a class="item" href={`/agenda/${p.id}`}>
+            <Icon name="person" class="avatar" />
+            <span class="text">
+              <span>
+                {p.name}
+                {p.id === staff.id ? ' · você' : ''}
+              </span>
+              <small>slots de {p.slotMinutes} min</small>
             </span>
-            <small>slots de {p.slotMinutes} min</small>
+            <Icon name="chevron_right" />
           </a>
-          <a class="queue-link" href={`/pendentes/${p.id}`}>
-            Pedidos aguardando
+          <a
+            class={`side ${pending[p.id] ? 'alert' : ''}`}
+            href={`/pendentes/${p.id}`}
+            title={`Pedidos de ${p.name}`}
+          >
+            <Icon name="pending_actions" class="big" />
+            <span>{pending[p.id] ?? 0}</span>
           </a>
         </li>
       ))}

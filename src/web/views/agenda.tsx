@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { GridBand } from '../../domain/schedule.ts'
 import { addDays, formatLongDate, formatTime, type LocalDate } from '../../domain/time.ts'
 import type { DayEntry } from '../../repos/appointments.ts'
+import { Icon } from './icon.tsx'
 
 export type DayViewProps = {
   providerId: string
@@ -40,6 +41,7 @@ const Busy: FC<RowProps & { entry: DayEntry; span: number }> = ({
               class="btn danger"
               hx-delete={`/agenda/${providerId}/bloqueios/${entry.id}?date=${date}`}
             >
+              <Icon name="lock_open" />
               Liberar
             </button>
           </div>
@@ -65,6 +67,7 @@ const Free: FC<RowProps & { start: Date; end: Date }> = ({
         hx-post={`/agenda/${providerId}/bloqueios?date=${date}`}
         hx-vals={JSON.stringify({ startsAt: start.toISOString(), endsAt: end.toISOString() })}
       >
+        <Icon name="block" />
         Bloquear {formatTime(start, timeZone)}
       </button>
     </div>
@@ -80,15 +83,27 @@ export const DayView: FC<DayViewProps> = ({ date, timeZone, bands, providerId, p
   return (
     <section id="dia" hx-target="#dia" hx-swap="outerHTML">
       <div class="daybar">
-        <button type="button" class="btn" hx-get={link(addDays(date, -1))} hx-push-url="true">
-          ‹
+        <button
+          type="button"
+          class="btn"
+          hx-get={link(addDays(date, -1))}
+          hx-push-url="true"
+          aria-label="Dia anterior"
+        >
+          <Icon name="chevron_left" class="big" />
         </button>
         <div class="today">
           <strong>{formatLongDate(date)}</strong>
           <span>{providerName}</span>
         </div>
-        <button type="button" class="btn" hx-get={link(addDays(date, 1))} hx-push-url="true">
-          ›
+        <button
+          type="button"
+          class="btn"
+          hx-get={link(addDays(date, 1))}
+          hx-push-url="true"
+          aria-label="Próximo dia"
+        >
+          <Icon name="chevron_right" class="big" />
         </button>
       </div>
 
@@ -99,6 +114,7 @@ export const DayView: FC<DayViewProps> = ({ date, timeZone, bands, providerId, p
           hx-post={`/agenda/${providerId}/folga?date=${date}`}
           hx-confirm="Bloquear o dia inteiro e avisar quem já está marcado?"
         >
+          <Icon name="event_busy" />
           Folga do dia
         </button>
       </div>

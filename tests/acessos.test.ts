@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { authEvents, providers } from '../src/db/schema.ts'
+import { appointments, authEvents, customers, providers } from '../src/db/schema.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
 import { createApp } from '../src/web/app.tsx'
 import { createSeededDb, staffLogin } from './helpers.ts'
@@ -181,9 +181,10 @@ describe('navegação da área interna', () => {
     expect(painel.headers.get('location')).toBe(`/agenda/${s.rafa.id}`)
 
     const html = await (await s.app.request(`/agenda/${s.rafa.id}`, { headers })).text()
-    expect(html).toContain('>Minha agenda</a>')
-    expect(html).not.toContain('>Clientes</a>')
-    expect(html).not.toContain('>Acessos</a>')
+    expect(html).toContain('Minha agenda')
+    expect(html).not.toContain('/clientes')
+    expect(html).not.toContain('/equipe/acessos')
+    expect(html.match(/class="menu-link/g)).toHaveLength(3)
   })
 
   it('marca a tela atual no menu', async () => {
@@ -191,6 +192,31 @@ describe('navegação da área interna', () => {
     const headers = await s.asStaff(s.carla.email ?? '')
     const html = await (await s.app.request('/clientes', { headers })).text()
 
-    expect(html).toContain('class="on" aria-current="page">Clientes</a>')
+    expect(html).toContain('aria-current="page"')
+    expect(html).toContain('class="menu-link on"')
+  })
+})
+
+describe('painel do dono', () => {
+  it('mostra quantos pedidos esperam em cada agenda', async () => {
+    const s = await setup()
+    const headers = await s.asStaff(s.carla.email ?? '')
+    const [maria] = await s.db.select().from(customers).limit(1)
+    await s.db.insert(appointments).values({
+      companyId: s.belezaPura.id,
+      providerId: s.rafa.id,
+      customerId: maria?.id,
+      serviceId: s.corte.id,
+      startsAt: new Date(Date.now() + 86_400_000),
+      endsAt: new Date(Date.now() + 90_000_000),
+      status: 'pending',
+      origin: 'app',
+      confirmDeadlineAt: new Date(Date.now() + 3_600_000),
+    })
+
+    const html = await (await s.app.request('/equipe', { headers })).text()
+    expect(html).toContain(`/pendentes/${s.rafa.id}`)
+    expect(html).toContain('class="side alert"')
+    expect(html).toContain('<span>1</span>')
   })
 })

@@ -4,6 +4,7 @@ import { canCustomerCancel } from '../../domain/booking.ts'
 import { formatPrice } from '../../domain/money.ts'
 import { formatLongDate, formatTime, formatWhen, type LocalDate } from '../../domain/time.ts'
 import type { CustomerEntry } from '../../repos/appointments.ts'
+import { Icon } from './icon.tsx'
 
 export type DayOption = { date: LocalDate; label: string; weekday: string }
 
@@ -30,7 +31,8 @@ const step = (service?: Service, provider?: Provider, date?: LocalDate, chosen?:
 
 const Voltar: FC<{ href: string }> = ({ href }) => (
   <button type="button" class="link" hx-get={href}>
-    ‹ voltar
+    <Icon name="arrow_back" />
+    voltar
   </button>
 )
 
@@ -42,12 +44,19 @@ export const Reserva: FC<ReservaProps> = (props) => {
 
   return (
     <section id="reserva" hx-target="#reserva" hx-swap="outerHTML" hx-push-url="true">
+      <div class="hero">
+        <Icon name="event_available" class="hero-icon" />
+        <strong>Olá, {props.customerName.split(' ')[0]}</strong>
+        <span class="hero-sub">vamos marcar seu horário</span>
+      </div>
+
       <div class="daybar">
         <div class="today">
           <strong>Novo agendamento</strong>
-          <span>Olá, {props.customerName}</span>
+          <span>em poucos passos</span>
         </div>
         <a class="btn" href="/reserva/meus">
+          <Icon name="schedule" />
           Meus horários
         </a>
       </div>
@@ -59,11 +68,15 @@ export const Reserva: FC<ReservaProps> = (props) => {
             {services.map((s) => (
               <li key={s.id}>
                 <button type="button" hx-get={`/reserva?servico=${s.id}`}>
-                  <span>{s.name}</span>
-                  <small>
-                    {s.durationMinutes} min
-                    {s.priceCents === null ? '' : ` · R$ ${formatPrice(s.priceCents)}`}
-                  </small>
+                  <Icon name="content_cut" class="avatar" />
+                  <span class="text">
+                    <span>{s.name}</span>
+                    <small>
+                      {s.durationMinutes} min
+                      {s.priceCents === null ? '' : ` · R$ ${formatPrice(s.priceCents)}`}
+                    </small>
+                  </span>
+                  <Icon name="chevron_right" />
                 </button>
               </li>
             ))}
@@ -82,8 +95,12 @@ export const Reserva: FC<ReservaProps> = (props) => {
               {providers.map((p) => (
                 <li key={p.id}>
                   <button type="button" hx-get={`${base}&prestador=${p.id}`}>
-                    <span>{p.name}</span>
-                    <small>{service?.name}</small>
+                    <Icon name="person" class="avatar" />
+                    <span class="text">
+                      <span>{p.name}</span>
+                      <small>{service?.name}</small>
+                    </span>
+                    <Icon name="chevron_right" />
                   </button>
                 </li>
               ))}
@@ -155,6 +172,7 @@ export const Reserva: FC<ReservaProps> = (props) => {
             <input type="hidden" name="prestador" value={provider.id} />
             <input type="hidden" name="hora" value={chosen.toISOString()} />
             <button type="submit" class="btn filled">
+              <Icon name="check" />
               Pedir este horário
             </button>
           </form>
@@ -188,6 +206,7 @@ export const Meus: FC<MeusProps> = ({ customerName, timeZone, now, items, error 
         <span>{customerName}</span>
       </div>
       <a class="btn" href="/reserva">
+        <Icon name="add" />
         Agendar
       </a>
     </div>
