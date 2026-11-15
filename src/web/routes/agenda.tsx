@@ -1,14 +1,13 @@
 import { type Context, Hono } from 'hono'
-import type { Db } from '../../db/client.ts'
 import { type Busy, buildDayGrid, workingIntervals } from '../../domain/schedule.ts'
 import { addDays, formatWhen, type LocalDate, localDate, toUtc } from '../../domain/time.ts'
-import type { Notifier } from '../../notify/notifier.ts'
 import { createAppointmentRepo, type DayEntry } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
+import type { Deps } from '../deps.ts'
 import { canManage, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { DayView, type DayViewProps } from '../views/agenda.tsx'
-import { Layout } from '../views/layout.tsx'
+import { StaffLayout } from '../views/staff-layout.tsx'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -22,12 +21,12 @@ function readInstant(raw: unknown): Date | undefined {
   return Number.isNaN(value.getTime()) ? undefined : value
 }
 
-export function agendaRoutes(db: Db, notifier: Notifier) {
+export function agendaRoutes({ db, notifier, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(providerRepo))
+  app.use('*', staffMiddleware(auth, providerRepo))
 
   async function dayView(
     companyId: string,
@@ -58,13 +57,18 @@ export function agendaRoutes(db: Db, notifier: Notifier) {
   }
 
   /** Toda ação devolve o mesmo fragmento; só a navegação direta ganha o layout. */
-  const render = (c: Context<StaffEnv>, props: DayViewProps, companyName: string) =>
+  const render = (c: Context<StaffEnv>, props: DayViewProps) =>
     c.req.header('HX-Request')
       ? c.html(<DayView {...props} />)
       : c.html(
-          <Layout title={`Agenda de ${props.providerName}`} companyName={companyName}>
+          <StaffLayout
+            title={`Agenda de ${props.providerName}`}
+            company={c.get('company')}
+            staff={c.get('staff')}
+            active="agendas"
+          >
             <DayView {...props} />
-          </Layout>,
+          </StaffLayout>,
         )
 
   app.get('/:providerId', async (c) => {
@@ -75,7 +79,7 @@ export function agendaRoutes(db: Db, notifier: Notifier) {
     const date = readDate(c.req.query('date'), company.timezone)
     const props = await dayView(company.id, company.timezone, c.req.param('providerId'), date)
     if (!props) return c.notFound()
-    return render(c, props, company.name)
+    return render(c, props)
   })
 
   app.post('/:providerId/bloqueios', async (c) => {
@@ -106,7 +110,7 @@ export function agendaRoutes(db: Db, notifier: Notifier) {
     const date = readDate(c.req.query('date'), company.timezone)
     const props = await dayView(company.id, company.timezone, provider.id, date)
     if (!props) return c.notFound()
-    return render(c, props, company.name)
+    return render(c, props)
   })
 
   app.delete('/:providerId/bloqueios/:id', async (c) => {
@@ -124,7 +128,7 @@ export function agendaRoutes(db: Db, notifier: Notifier) {
     const date = readDate(c.req.query('date'), company.timezone)
     const props = await dayView(company.id, company.timezone, providerId, date)
     if (!props) return c.notFound()
-    return render(c, props, company.name)
+    return render(c, props)
   })
 
   /** Folga do dia: cancela o que estava marcado, avisa quem precisa remarcar e
@@ -172,7 +176,7 @@ export function agendaRoutes(db: Db, notifier: Notifier) {
 
     const props = await dayView(company.id, company.timezone, provider.id, date)
     if (!props) return c.notFound()
-    return render(c, props, company.name)
+    return render(c, props)
   })
 
   return app

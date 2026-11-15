@@ -30,7 +30,7 @@ async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
-  auth.cookie = await staffLogin(app, notifier, HOST, seeded.carla.phone)
+  auth.cookie = await staffLogin(app, notifier, HOST, seeded.carla.email ?? '')
   return { ...seeded, notifier, app }
 }
 

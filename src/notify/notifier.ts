@@ -1,7 +1,9 @@
-/** Mensagens que o app precisa entregar fora da tela. O canal real (WhatsApp ou
- * SMS) entra quando houver salão piloto; até lá só existe a versão em log. */
+/** Mensagens que o app precisa entregar fora da tela. Cliente recebe por telefone
+ * e a equipe por e-mail; o canal real entra quando houver salão piloto, até lá
+ * só existe a versão em log. */
 export type NotifyMessage =
   | { kind: 'access-code'; to: string; code: string }
+  | { kind: 'magic-link'; to: string; url: string }
   | {
       kind: 'pending-request'
       to: string
@@ -22,6 +24,8 @@ export function renderMessage(message: NotifyMessage): string {
   switch (message.kind) {
     case 'access-code':
       return `Seu código de acesso é ${message.code}. Ele vale por 10 minutos.`
+    case 'magic-link':
+      return `Para entrar, abra ${message.url}. O link vale por 15 minutos.`
     case 'pending-request':
       return `${message.customerName} pediu ${message.serviceName} em ${message.when}. Responda até ${message.deadline}.`
     case 'request-answer':

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { appointments, customers } from '../src/db/schema.ts'
+import { appointments, customers, providers } from '../src/db/schema.ts'
 import { toUtc } from '../src/domain/time.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
 import { createApp } from '../src/web/app.tsx'
@@ -15,9 +15,9 @@ async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
-  const asStaff = async (phone: string) => ({
+  const asStaff = async (email: string) => ({
     host: HOST,
-    cookie: await staffLogin(app, notifier, HOST, phone),
+    cookie: await staffLogin(app, notifier, HOST, email),
   })
   return { ...seeded, notifier, app, asStaff }
 }
@@ -30,42 +30,64 @@ describe('porta da equipe', () => {
     expect(res.headers.get('location')).toBe('/equipe/entrar?next=%2Fclientes')
   })
 
-  it('responde igual para número que não é da equipe, sem mandar código', async () => {
+  it('responde igual para e-mail de fora, sem mandar link', async () => {
     const s = await setup()
     const res = await s.app.request('/equipe/entrar', {
       method: 'POST',
       headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ telefone: '11999990000' }),
+      body: new URLSearchParams({ email: 'invasor@fora.com' }),
     })
+
     expect(res.status).toBe(200)
-    expect(await res.text()).toContain('Código')
+    expect(await res.text()).toContain('estiver na equipe deste salão')
     expect(s.notifier.sent).toHaveLength(0)
   })
 
-  it('não aceita código de cliente na porta da equipe', async () => {
+  it('não manda link para quem foi tirado da equipe', async () => {
     const s = await setup()
-    await s.app.request('/entrar', {
-      method: 'POST',
-      headers: { host: CLIENT_HOST, 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ nome: 'Carla Mendes', telefone: s.carla.phone }),
-    })
-    const issued = s.notifier.sent.at(-1)
-    if (issued?.kind !== 'access-code') throw new Error('sem código')
+    await s.db.update(providers).set({ active: false }).where(eq(providers.id, s.rafa.id))
 
+    await s.app.request('/equipe/entrar', {
+      method: 'POST',
+      headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email: s.rafa.email ?? '' }),
+    })
+    expect(s.notifier.sent).toHaveLength(0)
+  })
+
+  it('link usado duas vezes não cria sessão de novo', async () => {
+    const s = await setup()
+    await s.app.request('/equipe/entrar', {
+      method: 'POST',
+      headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email: s.carla.email ?? '' }),
+    })
+    const sent = s.notifier.sent.at(-1)
+    if (sent?.kind !== 'magic-link') throw new Error('sem link')
+
+    const primeira = await s.app.request(sent.url, { headers: { host: HOST } })
+    expect(primeira.headers.getSetCookie().length).toBeGreaterThan(0)
+
+    const segunda = await s.app.request(sent.url, { headers: { host: HOST } })
+    expect(segunda.headers.getSetCookie()).toHaveLength(0)
+  })
+
+  it('a porta antiga por código some: o caminho vira pedido de login', async () => {
+    const s = await setup()
     const res = await s.app.request('/equipe/entrar/codigo', {
       method: 'POST',
       headers: { host: HOST, 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ telefone: s.carla.phone, codigo: issued.code }),
+      body: new URLSearchParams({ telefone: s.carla.phone, codigo: '123456' }),
     })
-    expect(res.status).toBe(422)
-    expect(await res.text()).toContain('O código venceu')
+    expect(res.status).toBe(303)
+    expect(res.headers.get('location')).toContain('/equipe/entrar')
   })
 })
 
 describe('acesso por papel', () => {
   it('prestador comum não entra na carteira nem no catálogo', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.rafa.phone)
+    const headers = await s.asStaff(s.rafa.email ?? '')
 
     expect((await s.app.request('/clientes', { headers })).status).toBe(403)
     expect((await s.app.request('/servicos', { headers })).status).toBe(403)
@@ -73,7 +95,7 @@ describe('acesso por papel', () => {
 
   it('prestador abre a própria agenda, não a dos outros', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.rafa.phone)
+    const headers = await s.asStaff(s.rafa.email ?? '')
 
     expect((await s.app.request(`/agenda/${s.rafa.id}`, { headers })).status).toBe(200)
     expect((await s.app.request(`/agenda/${s.carla.id}`, { headers })).status).toBe(403)
@@ -82,7 +104,7 @@ describe('acesso por papel', () => {
 
   it('dono abre a agenda de qualquer pessoa da equipe', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.carla.phone)
+    const headers = await s.asStaff(s.carla.email ?? '')
     expect((await s.app.request(`/agenda/${s.rafa.id}`, { headers })).status).toBe(200)
   })
 
@@ -110,7 +132,7 @@ describe('acesso por papel', () => {
 describe('carteira de clientes', () => {
   it('mostra nome, telefone e quantidade de agendamentos', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.carla.phone)
+    const headers = await s.asStaff(s.carla.email ?? '')
     const [maria] = await s.db.select().from(customers).where(eq(customers.name, 'Maria Silva'))
     await s.db.insert(appointments).values({
       companyId: s.belezaPura.id,
@@ -131,7 +153,7 @@ describe('carteira de clientes', () => {
 
   it('não mostra cliente de outro salão', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.carla.phone)
+    const headers = await s.asStaff(s.carla.email ?? '')
     const html = await (await s.app.request('/clientes', { headers })).text()
 
     expect(html).toContain('João Prado')
@@ -145,7 +167,7 @@ describe('carteira de clientes', () => {
 
   it('busca por nome e por telefone', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.carla.phone)
+    const headers = await s.asStaff(s.carla.email ?? '')
 
     const porNome = await (await s.app.request('/clientes?q=joão', { headers })).text()
     expect(porNome).toContain('João Prado')
@@ -158,7 +180,7 @@ describe('carteira de clientes', () => {
 
   it('abre o histórico do cliente no modal', async () => {
     const s = await setup()
-    const headers = await s.asStaff(s.carla.phone)
+    const headers = await s.asStaff(s.carla.email ?? '')
     const [maria] = await s.db.select().from(customers).where(eq(customers.name, 'Maria Silva'))
     await s.db.insert(appointments).values({
       companyId: s.belezaPura.id,

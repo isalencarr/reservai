@@ -1,9 +1,13 @@
 import { Hono } from 'hono'
+import { type Auth, createAuth } from '../auth/config.ts'
 import type { Db } from '../db/client.ts'
+import { clientIp } from '../domain/privacy.ts'
 import { expirePending } from '../jobs/expire.ts'
 import { createLogNotifier } from '../notify/log-notifier.ts'
 import type { Notifier } from '../notify/notifier.ts'
+import { createAuthEventRepo } from '../repos/auth-events.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
+import { createProviderRepo } from '../repos/providers.ts'
 import { agendaRoutes } from './routes/agenda.tsx'
 import { clientesRoutes } from './routes/clientes.tsx'
 import { entrarRoutes } from './routes/entrar.tsx'
@@ -12,7 +16,8 @@ import { horariosRoutes } from './routes/horarios.tsx'
 import { pendentesRoutes } from './routes/pendentes.tsx'
 import { reservaRoutes } from './routes/reserva.tsx'
 import { servicosRoutes } from './routes/servicos.tsx'
-import { type TenantEnv, tenantMiddleware } from './tenant.ts'
+import { staffOf } from './staff.ts'
+import { requireArea, type TenantEnv, tenantMiddleware } from './tenant.ts'
 import { Layout } from './views/layout.tsx'
 
 const ASSETS: Record<string, { path: string; type: string }> = {
@@ -23,7 +28,8 @@ const ASSETS: Record<string, { path: string; type: string }> = {
   },
 }
 
-export function createApp(db: Db, notifier: Notifier = createLogNotifier()) {
+export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth?: Auth) {
+  const deps = { db, notifier, auth: auth ?? createAuth(db, notifier) }
   const app = new Hono<TenantEnv>()
 
   app.get('/health', (c) => c.json({ ok: true }))
@@ -43,23 +49,24 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier()) {
     await next()
   })
 
-  /** Cada endereço tem a sua porta: o do salão atende cliente, o `equipe.` atende
-   * quem trabalha lá. */
-  app.get('/', (c) => {
+  /**
+   * O endereço do cliente convida a agendar. O da equipe não anuncia nada: sem
+   * sessão, a página inicial é a própria tela de entrar.
+   */
+  app.get('/', async (c) => {
     const company = c.get('company')
-    const equipe = c.get('area') === 'staff'
+    if (c.get('area') === 'staff') {
+      const staff = await staffOf(deps.auth, createProviderRepo(db), c as never)
+      return c.redirect(staff ? '/equipe' : '/equipe/entrar', 303)
+    }
     return c.html(
       <Layout title="Início" companyName={company.name}>
-        <h2>{equipe ? 'Área da equipe' : 'Bem-vindo'}</h2>
+        <h2>Bem-vindo</h2>
         <ul class="people">
           <li>
-            <a href={equipe ? '/equipe' : '/reserva'}>
-              <span>{equipe ? 'Abrir o painel' : 'Agendar um horário'}</span>
-              <small>
-                {equipe
-                  ? 'agenda, pedidos, catálogo e carteira'
-                  : 'escolha serviço, profissional e dia'}
-              </small>
+            <a href="/reserva">
+              <span>Agendar um horário</span>
+              <small>escolha serviço, profissional e dia</small>
             </a>
           </li>
         </ul>
@@ -67,12 +74,33 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier()) {
     )
   })
 
-  app.route('/agenda', agendaRoutes(db, notifier))
-  app.route('/horarios', horariosRoutes(db))
-  app.route('/pendentes', pendentesRoutes(db, notifier))
-  app.route('/servicos', servicosRoutes(db))
-  app.route('/equipe', equipeRoutes(db, notifier))
-  app.route('/clientes', clientesRoutes(db))
+  /** As rotas da biblioteca de autenticação só existem no endereço da equipe. */
+  const authRoutes = new Hono<TenantEnv>()
+  authRoutes.use('*', requireArea('staff'))
+  authRoutes.on(['GET', 'POST'], '/*', async (c) => {
+    const res = await deps.auth.handler(c.req.raw)
+
+    // Link que não virou sessão é tentativa recusada: o token não diz de quem é,
+    // então fica o que dá para saber — quando, de onde e por qual caminho.
+    if (c.req.path.includes('/magic-link/verify') && res.headers.getSetCookie().length === 0) {
+      await createAuthEventRepo(db).record({
+        companyId: c.get('company').id,
+        type: 'login_failed',
+        ip: clientIp(c.req.raw.headers),
+        userAgent: c.req.header('user-agent'),
+        reason: 'link inválido ou vencido',
+      })
+    }
+    return res
+  })
+  app.route('/api/auth', authRoutes)
+
+  app.route('/agenda', agendaRoutes(deps))
+  app.route('/horarios', horariosRoutes(deps))
+  app.route('/pendentes', pendentesRoutes(deps))
+  app.route('/servicos', servicosRoutes(deps))
+  app.route('/equipe', equipeRoutes(deps))
+  app.route('/clientes', clientesRoutes(deps))
   app.route('/entrar', entrarRoutes(db, notifier))
   app.route('/reserva', reservaRoutes(db, notifier))
 

@@ -29,6 +29,20 @@
       "when": 1794770295959,
       "tag": "0003_publico-do-codigo",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794775336475,
+      "tag": "0004_autenticacao-por-email",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794775746949,
+      "tag": "0005_registro-de-acesso",
+      "breakpoints": true
     }
   ]
 }

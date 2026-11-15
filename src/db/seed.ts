@@ -1,6 +1,7 @@
 import { defaultWorkweek } from '../domain/workday.ts'
 import type { Db } from './client.ts'
 import {
+  account,
   appointments,
   companies,
   customers,
@@ -8,9 +9,14 @@ import {
   providerServices,
   providers,
   services,
+  session,
+  user,
 } from './schema.ts'
 
 export async function seed(db: Db) {
+  await db.delete(account)
+  await db.delete(session)
+  await db.delete(user)
   await db.delete(appointments)
   await db.delete(providerServices)
   await db.delete(providerHours)
@@ -32,9 +38,27 @@ export async function seed(db: Db) {
   const [carla, rafa, ines] = await db
     .insert(providers)
     .values([
-      { companyId: belezaPura.id, name: 'Carla Mendes', phone: '11988880001', role: 'owner' },
-      { companyId: belezaPura.id, name: 'Rafa Lima', phone: '11988880002', slotMinutes: 30 },
-      { companyId: studioNorte.id, name: 'Inês Prado', phone: '11988880003', role: 'owner' },
+      {
+        companyId: belezaPura.id,
+        name: 'Carla Mendes',
+        phone: '11988880001',
+        email: 'carla@belezapura.com.br',
+        role: 'owner',
+      },
+      {
+        companyId: belezaPura.id,
+        name: 'Rafa Lima',
+        phone: '11988880002',
+        email: 'rafa@belezapura.com.br',
+        slotMinutes: 30,
+      },
+      {
+        companyId: studioNorte.id,
+        name: 'Inês Prado',
+        phone: '11988880003',
+        email: 'ines@studionorte.com.br',
+        role: 'owner',
+      },
     ])
     .returning()
 

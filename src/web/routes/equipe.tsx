@@ -1,25 +1,25 @@
 import { type Context, Hono } from 'hono'
-import type { Db } from '../../db/client.ts'
-import { CODE_MAX_ATTEMPTS, codeExpiry, generateCode, hashCode } from '../../domain/access-code.ts'
+import { normalizeEmail } from '../../domain/email.ts'
 import { normalizePhone } from '../../domain/phone.ts'
-import type { Notifier } from '../../notify/notifier.ts'
-import { createAccessCodeRepo } from '../../repos/access-codes.ts'
-import type { ProviderInput } from '../../repos/providers.ts'
-import { createProviderRepo } from '../../repos/providers.ts'
-import { clearStaffSession, setStaffSession } from '../auth.ts'
+import { clientIp } from '../../domain/privacy.ts'
+import { createAuthEventRepo } from '../../repos/auth-events.ts'
+import { createProviderRepo, type ProviderInput } from '../../repos/providers.ts'
+import type { Deps } from '../deps.ts'
 import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
+import { Acessos } from '../views/acessos.tsx'
 import { EntrarEquipe, type EntrarEquipeProps, Painel } from '../views/equipe.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Pessoas, type PessoasProps } from '../views/pessoas.tsx'
+import { StaffLayout } from '../views/staff-layout.tsx'
 
 function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/equipe'
 }
 
-export function equipeRoutes(db: Db, notifier: Notifier) {
+export function equipeRoutes({ db, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
-  const codeRepo = createAccessCodeRepo(db)
+  const eventRepo = createAuthEventRepo(db)
   const app = new Hono<TenantEnv>()
   app.use('*', requireArea('staff'))
 
@@ -33,7 +33,7 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
       c.req.header('HX-Request') ? (
         <EntrarEquipe {...props} />
       ) : (
-        <Layout title="Equipe" companyName={companyName}>
+        <Layout title="Entrar" companyName={companyName}>
           <EntrarEquipe {...props} />
         </Layout>
       ),
@@ -45,102 +45,79 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
     return render(c, { next: safeNext(c.req.query('next')) }, company.name)
   })
 
-  /** A resposta é a mesma para número da equipe e número qualquer: a lista de
-   * quem trabalha no salão não precisa vazar por tentativa e erro. */
+  /**
+   * O link só é emitido para e-mail que já está na equipe ativa deste salão:
+   * é isso que faz o acesso ser por convite, e não por cadastro aberto.
+   */
   app.post('/entrar', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
     const next = safeNext(body.next)
-    const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
-    if (!phone) {
-      return render(c, { next, error: 'Telefone inválido. Use DDD e número.' }, company.name, 422)
-    }
+    const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
+    if (!email) return render(c, { next, error: 'E-mail inválido.' }, company.name, 422)
 
-    const staff = await providerRepo.findByPhone(company.id, phone)
+    const staff = await providerRepo.findByEmail(company.id, email)
     if (staff?.active) {
-      const code = generateCode()
-      await codeRepo.issue({
-        companyId: company.id,
-        phone,
-        name: staff.name,
-        audience: 'staff',
-        codeHash: hashCode(code),
-        expiresAt: codeExpiry(new Date()),
+      await auth.api.signInMagicLink({
+        body: { email, callbackURL: next, name: staff.name },
+        headers: c.req.raw.headers,
       })
-      await notifier.send({ kind: 'access-code', to: phone, code })
+    } else {
+      // Pedido de link por quem não é da equipe é o sinal de que alguém está tentando entrar.
+      await eventRepo.record({
+        companyId: company.id,
+        type: 'login_failed',
+        email,
+        ip: clientIp(c.req.raw.headers),
+        userAgent: c.req.header('user-agent'),
+        reason: staff ? 'fora da equipe' : 'e-mail desconhecido',
+      })
     }
 
-    return render(c, { next, phone }, company.name)
-  })
-
-  app.post('/entrar/codigo', async (c) => {
-    const company = c.get('company')
-    const body = await c.req.parseBody()
-    const next = safeNext(body.next)
-    const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
-    const typed = typeof body.codigo === 'string' ? body.codigo.replace(/\D/g, '') : ''
-    if (!phone) return render(c, { next, error: 'Comece de novo, por favor.' }, company.name, 422)
-
-    const active = await codeRepo.findActive(company.id, phone, 'staff', new Date())
-    if (!active) {
-      return render(c, { next, error: 'O código venceu. Peça outro.' }, company.name, 422)
-    }
-
-    if (active.attempts + 1 >= CODE_MAX_ATTEMPTS && active.codeHash !== hashCode(typed)) {
-      await codeRepo.clear(company.id, phone, 'staff')
-      return render(
-        c,
-        { next, error: 'Muitas tentativas. Peça um código novo.' },
-        company.name,
-        422,
-      )
-    }
-
-    if (active.codeHash !== hashCode(typed)) {
-      await codeRepo.registerAttempt(active.id)
-      return render(c, { next, phone, error: 'Código errado.' }, company.name, 422)
-    }
-
-    const staff = await providerRepo.findByPhone(company.id, phone)
-    if (!staff?.active) {
-      return render(c, { next, error: 'Esse número não está mais na equipe.' }, company.name, 403)
-    }
-
-    await codeRepo.clear(company.id, phone, 'staff')
-    await setStaffSession(c, company.id, staff.id)
-    c.header('HX-Redirect', next)
-    return c.redirect(next, 303)
+    return render(c, { next, sentTo: email }, company.name)
   })
 
   const painel = new Hono<StaffEnv>()
-  painel.use('*', staffMiddleware(providerRepo))
+  painel.use('*', staffMiddleware(auth, providerRepo))
 
   painel.get('/', async (c) => {
     const company = c.get('company')
     const staff = c.get('staff')
-    const providers =
-      staff.role === 'owner' ? await providerRepo.listByCompany(company.id) : [staff]
+
+    // Quem atende tem uma agenda só: a lista não acrescenta nada.
+    if (staff.role !== 'owner') return c.redirect(`/agenda/${staff.id}`, 303)
+
     return c.html(
-      <Layout title="Equipe" companyName={company.name}>
-        <Painel staff={staff} providers={providers} />
-      </Layout>,
+      <StaffLayout title="Agendas" company={company} staff={staff} active="agendas">
+        <Painel staff={staff} providers={await providerRepo.listByCompany(company.id)} />
+      </StaffLayout>,
     )
   })
 
-  painel.post('/sair', (c) => {
-    clearStaffSession(c)
-    c.header('HX-Redirect', '/')
-    return c.redirect('/', 303)
+  painel.post('/sair', async (c) => {
+    await eventRepo.record({
+      companyId: c.get('company').id,
+      type: 'logout',
+      email: c.get('staff').email,
+      ip: clientIp(c.req.raw.headers),
+      userAgent: c.req.header('user-agent'),
+    })
+    await auth.api.signOut({ headers: c.req.raw.headers, asResponse: false })
+    c.header('HX-Redirect', '/equipe/entrar')
+    return c.redirect('/equipe/entrar', 303)
   })
 
   /** Cadastro da equipe é do dono: é por aqui que entra quem vai atender. */
   const pessoas = new Hono<StaffEnv>()
-  pessoas.use('*', staffMiddleware(providerRepo))
+  pessoas.use('*', staffMiddleware(auth, providerRepo))
   pessoas.use('*', requireOwner())
 
   function readPessoa(body: Record<string, unknown>): ProviderInput | { error: string } {
     const name = typeof body.nome === 'string' ? body.nome.trim() : ''
     if (name.length < 2) return { error: 'Escreva o nome da pessoa.' }
+
+    const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
+    if (!email) return { error: 'E-mail inválido: é por ele que a pessoa entra.' }
 
     const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
     if (!phone) return { error: 'Telefone inválido. Use DDD e número.' }
@@ -157,6 +134,7 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
 
     return {
       name,
+      email,
       phone,
       role: body.papel === 'owner' ? 'owner' : 'provider',
       slotMinutes,
@@ -181,15 +159,37 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
       c.req.header('HX-Request') ? (
         <Pessoas {...view} />
       ) : (
-        <Layout title="Equipe" companyName={company.name}>
+        <StaffLayout title="Equipe" company={company} staff={c.get('staff')} active="pessoas">
           <Pessoas {...view} />
-        </Layout>
+        </StaffLayout>
       ),
       status as 200,
     )
   }
 
+  /** Convite é o próprio link de acesso: a pessoa não escolhe senha nem
+   * preenche cadastro, só clica e entra. */
+  async function convidar(c: Context<StaffEnv>, name: string, email: string) {
+    if (!email) return
+    await auth.api.signInMagicLink({
+      body: { email, callbackURL: '/equipe', name },
+      headers: c.req.raw.headers,
+    })
+  }
+
   pessoas.get('/', (c) => pessoasView(c, { editingId: c.req.query('editar') }))
+
+  pessoas.post('/:id/convite', async (c) => {
+    const company = c.get('company')
+    const pessoa = await providerRepo.findById(company.id, c.req.param('id') ?? '')
+    if (!pessoa) return c.notFound()
+    if (!pessoa.active) {
+      return pessoasView(c, { error: 'Essa pessoa não está mais na equipe.' }, 422)
+    }
+
+    await convidar(c, pessoa.name, pessoa.email ?? '')
+    return pessoasView(c, { editingId: pessoa.id })
+  })
 
   pessoas.post('/', async (c) => {
     const company = c.get('company')
@@ -199,8 +199,12 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
     if (await providerRepo.findByPhone(company.id, parsed.phone)) {
       return pessoasView(c, { error: 'Já existe alguém com esse telefone.' }, 422)
     }
+    if (parsed.email && (await providerRepo.findByEmail(company.id, parsed.email))) {
+      return pessoasView(c, { error: 'Já existe alguém com esse e-mail.' }, 422)
+    }
 
-    await providerRepo.create(company.id, parsed)
+    const criada = await providerRepo.create(company.id, parsed)
+    await convidar(c, criada.name, criada.email ?? '')
     return pessoasView(c)
   })
 
@@ -213,9 +217,15 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
     const parsed = readPessoa(await c.req.parseBody())
     if ('error' in parsed) return pessoasView(c, { error: parsed.error, editingId: id }, 422)
 
-    const outro = await providerRepo.findByPhone(company.id, parsed.phone)
-    if (outro && outro.id !== id) {
+    const mesmoTelefone = await providerRepo.findByPhone(company.id, parsed.phone)
+    if (mesmoTelefone && mesmoTelefone.id !== id) {
       return pessoasView(c, { error: 'Já existe alguém com esse telefone.', editingId: id }, 422)
+    }
+    const mesmoEmail = parsed.email
+      ? await providerRepo.findByEmail(company.id, parsed.email)
+      : undefined
+    if (mesmoEmail && mesmoEmail.id !== id) {
+      return pessoasView(c, { error: 'Já existe alguém com esse e-mail.', editingId: id }, 422)
     }
 
     // Rebaixar o último dono deixaria o salão sem quem administra catálogo e carteira.
@@ -260,6 +270,20 @@ export function equipeRoutes(db: Db, notifier: Notifier) {
     return pessoasView(c)
   })
 
+  /** O registro é do salão, então fica com o dono. */
+  const acessos = new Hono<StaffEnv>()
+  acessos.use('*', staffMiddleware(auth, providerRepo))
+  acessos.use('*', requireOwner())
+  acessos.get('/', async (c) => {
+    const company = c.get('company')
+    return c.html(
+      <StaffLayout title="Acessos" company={company} staff={c.get('staff')} active="acessos">
+        <Acessos items={await eventRepo.listRecent(company.id)} timeZone={company.timezone} />
+      </StaffLayout>,
+    )
+  })
+
+  app.route('/acessos', acessos)
   app.route('/pessoas', pessoas)
   app.route('/', painel)
   return app

@@ -2,7 +2,6 @@ import type { Context } from 'hono'
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 
 const CUSTOMER_COOKIE = 'cliente'
-const STAFF_COOKIE = 'equipe'
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 
 /** Em produção o segredo vem do ambiente; o valor local existe para o app subir
@@ -11,8 +10,9 @@ export function sessionSecret(): string {
   return process.env.SESSION_SECRET ?? 'reservai-dev-secret'
 }
 
-/** A sessão carrega a empresa junto: um cookie emitido por um salão não vale no
- * outro, mesmo que alguém aponte os dois domínios para o mesmo servidor. */
+/** Sessão do cliente, que entra por telefone e código. A equipe tem a sua, na
+ * biblioteca de autenticação. O cookie carrega a empresa junto: um emitido por
+ * um salão não vale no outro. */
 async function setSession(c: Context, name: string, companyId: string, subjectId: string) {
   await setSignedCookie(c, name, `${companyId}:${subjectId}`, sessionSecret(), {
     httpOnly: true,
@@ -37,11 +37,3 @@ export const readCustomerId = (c: Context, companyId: string) =>
   readSession(c, CUSTOMER_COOKIE, companyId)
 
 export const clearCustomerSession = (c: Context) => deleteCookie(c, CUSTOMER_COOKIE, { path: '/' })
-
-export const setStaffSession = (c: Context, companyId: string, providerId: string) =>
-  setSession(c, STAFF_COOKIE, companyId, providerId)
-
-export const readStaffId = (c: Context, companyId: string) =>
-  readSession(c, STAFF_COOKIE, companyId)
-
-export const clearStaffSession = (c: Context) => deleteCookie(c, STAFF_COOKIE, { path: '/' })

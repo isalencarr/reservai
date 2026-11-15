@@ -1,21 +1,20 @@
 import { type Context, Hono } from 'hono'
-import type { Db } from '../../db/client.ts'
 import { isOverdue } from '../../domain/booking.ts'
 import { formatWhen } from '../../domain/time.ts'
-import type { Notifier } from '../../notify/notifier.ts'
 import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
+import type { Deps } from '../deps.ts'
 import { canManage, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { Layout } from '../views/layout.tsx'
 import { Pendentes, type PendentesProps } from '../views/pendentes.tsx'
+import { StaffLayout } from '../views/staff-layout.tsx'
 
-export function pendentesRoutes(db: Db, notifier: Notifier) {
+export function pendentesRoutes({ db, notifier, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(providerRepo))
+  app.use('*', staffMiddleware(auth, providerRepo))
 
   async function props(
     companyId: string,
@@ -33,13 +32,18 @@ export function pendentesRoutes(db: Db, notifier: Notifier) {
     }
   }
 
-  const render = (c: Context<StaffEnv>, view: PendentesProps, companyName: string) =>
+  const render = (c: Context<StaffEnv>, view: PendentesProps) =>
     c.req.header('HX-Request')
       ? c.html(<Pendentes {...view} />)
       : c.html(
-          <Layout title="Pedidos" companyName={companyName}>
+          <StaffLayout
+            title="Pedidos"
+            company={c.get('company')}
+            staff={c.get('staff')}
+            active="pedidos"
+          >
             <Pendentes {...view} />
-          </Layout>,
+          </StaffLayout>,
         )
 
   app.get('/:providerId', async (c) => {
@@ -49,7 +53,7 @@ export function pendentesRoutes(db: Db, notifier: Notifier) {
     }
     const view = await props(company.id, company.timezone, c.req.param('providerId'))
     if (!view) return c.notFound()
-    return render(c, view, company.name)
+    return render(c, view)
   })
 
   /** Confirmar e recusar seguem o mesmo caminho; só muda o status gravado e o
@@ -84,7 +88,7 @@ export function pendentesRoutes(db: Db, notifier: Notifier) {
 
     const view = await props(company.id, company.timezone, providerId)
     if (!view) return c.notFound()
-    return render(c, view, company.name)
+    return render(c, view)
   }
 
   app.post('/:providerId/:id/confirmar', (c) => answer(c, true))

@@ -1,20 +1,20 @@
 import { type Context, Hono } from 'hono'
-import type { Db } from '../../db/client.ts'
 import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createCustomerRepo } from '../../repos/customers.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
+import type { Deps } from '../deps.ts'
 import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Clientes, type ClientesProps } from '../views/clientes.tsx'
-import { Layout } from '../views/layout.tsx'
+import { StaffLayout } from '../views/staff-layout.tsx'
 
-export function clientesRoutes(db: Db) {
+export function clientesRoutes({ db, auth }: Deps) {
   const customerRepo = createCustomerRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
 
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(createProviderRepo(db)))
+  app.use('*', staffMiddleware(auth, createProviderRepo(db)))
   app.use('*', requireOwner())
 
   app.get('/', async (c: Context<StaffEnv>) => {
@@ -33,9 +33,9 @@ export function clientesRoutes(db: Db) {
       c.req.header('HX-Request') ? (
         <Clientes {...view} />
       ) : (
-        <Layout title="Clientes" companyName={company.name}>
+        <StaffLayout title="Clientes" company={company} staff={c.get('staff')} active="clientes">
           <Clientes {...view} />
-        </Layout>
+        </StaffLayout>
       ),
     )
   })

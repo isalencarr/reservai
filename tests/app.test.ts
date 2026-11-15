@@ -48,19 +48,20 @@ describe('separação de área por endereço', () => {
     }
   })
 
-  it('a página inicial muda conforme o endereço', async () => {
+  it('o endereço do cliente convida a agendar', async () => {
     const { db } = await createSeededDb()
     const app = createApp(db)
+    const html = await (await get(app, '/', 'beleza-pura.localhost')).text()
 
-    expect(await (await get(app, '/', 'beleza-pura.localhost')).text()).toContain(
-      'Agendar um horário',
-    )
-    expect(await (await get(app, '/', STAFF)).text()).toContain('Área da equipe')
+    expect(html).toContain('Agendar um horário')
+    expect(html).toContain('Beleza Pura')
   })
 
-  it('o endereço da equipe serve o mesmo salão', async () => {
+  it('o endereço da equipe não anuncia nada sem sessão', async () => {
     const { db } = await createSeededDb()
-    const app = createApp(db)
-    expect(await (await get(app, '/', STAFF)).text()).toContain('Beleza Pura')
+    const res = await get(createApp(db), '/', STAFF)
+
+    expect(res.status).toBe(303)
+    expect(res.headers.get('location')).toBe('/equipe/entrar')
   })
 })

@@ -26,27 +26,28 @@ export function upcomingWeekday(weekday: number, timeZone: string, minDaysAhead 
   return date
 }
 
-/** Faz o login de equipe pelo caminho real (código no notificador) e devolve o
- * cookie de sessão, para os testes exercitarem as telas protegidas. */
+/** Faz o login de equipe pelo caminho real: pede o link, lê o endereço que
+ * chegou ao notificador e visita, como a pessoa faria no e-mail. */
 export async function staffLogin(
   app: { request: (path: string, init?: RequestInit) => Promise<Response> | Response },
   notifier: LogNotifier,
   host: string,
-  phone: string,
+  email: string,
 ): Promise<string> {
-  const post = async (path: string, values: Record<string, string>) =>
-    app.request(path, {
-      method: 'POST',
-      headers: { host, 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(values),
-    })
+  await app.request('/equipe/entrar', {
+    method: 'POST',
+    headers: { host, 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ email }),
+  })
 
-  await post('/equipe/entrar', { telefone: phone })
-  const issued = notifier.sent.at(-1)
-  if (issued?.kind !== 'access-code') throw new Error('código da equipe não foi enviado')
+  const sent = notifier.sent.at(-1)
+  if (sent?.kind !== 'magic-link') throw new Error(`link da equipe não foi enviado para ${email}`)
 
-  const res = await post('/equipe/entrar/codigo', { telefone: phone, codigo: issued.code })
-  const cookie = res.headers.get('set-cookie')?.split(';')[0]
+  const res = await app.request(sent.url, { headers: { host } })
+  const cookie = res.headers
+    .getSetCookie()
+    .map((c) => c.split(';')[0])
+    .join('; ')
   if (!cookie) throw new Error('sessão da equipe não foi criada')
   return cookie
 }

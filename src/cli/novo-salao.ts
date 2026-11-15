@@ -1,6 +1,7 @@
 import { parseArgs } from 'node:util'
 import { type createDb, db } from '../db/client.ts'
 import { companies } from '../db/schema.ts'
+import { normalizeEmail } from '../domain/email.ts'
 import { formatPhone, normalizePhone } from '../domain/phone.ts'
 import { slugify } from '../domain/slug.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
@@ -11,6 +12,7 @@ export type NovoSalao = {
   nome: string
   host: string
   dono: string
+  email: string
   telefone: string
   slug?: string
   fuso?: string
@@ -27,6 +29,7 @@ export async function criarSalao(database: ReturnType<typeof createDb>, input: N
   const host = normalizeHost(input.host.replace(/^https?:\/\//, '').replace(/\/.*$/, ''))
   const slug = slugify(input.slug ?? input.nome)
   const phone = normalizePhone(input.telefone)
+  const email = normalizeEmail(input.email)
 
   if (!input.nome.trim()) throw new Error('informe --nome')
   if (!host) throw new Error('informe --host, por exemplo: --host salao.com.br')
@@ -38,6 +41,7 @@ export async function criarSalao(database: ReturnType<typeof createDb>, input: N
   if (!slug) throw new Error('o nome não gerou um endereço curto válido; use --slug')
   if (!input.dono.trim()) throw new Error('informe --dono')
   if (!phone) throw new Error('telefone inválido; use DDD e número, como 11988880001')
+  if (!email) throw new Error('e-mail inválido; é por ele que o dono entra')
 
   const companyRepo = createCompanyRepo(database)
   if (await companyRepo.findByHost(host)) {
@@ -55,6 +59,7 @@ export async function criarSalao(database: ReturnType<typeof createDb>, input: N
 
   const owner = await createProviderRepo(database).create(company.id, {
     name: input.dono.trim(),
+    email,
     phone,
     role: 'owner',
     slotMinutes: 60,
@@ -70,16 +75,18 @@ if (import.meta.main) {
       nome: { type: 'string' },
       host: { type: 'string' },
       dono: { type: 'string' },
+      email: { type: 'string' },
       telefone: { type: 'string' },
       slug: { type: 'string' },
       fuso: { type: 'string' },
     },
   })
 
-  if (!values.nome || !values.host || !values.dono || !values.telefone) {
+  if (!values.nome || !values.host || !values.dono || !values.email || !values.telefone) {
     console.error(
       'uso: bun run salao:novo --nome "Beleza Pura" --host beleza-pura.com.br \\\n' +
-        '       --dono "Carla Mendes" --telefone 11988880001 [--slug beleza-pura] [--fuso America/Sao_Paulo]',
+        '       --dono "Carla Mendes" --email carla@salao.com.br --telefone 11988880001 \\\n' +
+        '       [--slug beleza-pura] [--fuso America/Sao_Paulo]',
     )
     process.exit(1)
   }
@@ -89,6 +96,7 @@ if (import.meta.main) {
       nome: values.nome,
       host: values.host,
       dono: values.dono,
+      email: values.email,
       telefone: values.telefone,
       slug: values.slug,
       fuso: values.fuso,
@@ -97,7 +105,7 @@ if (import.meta.main) {
     console.log(`salão "${company.name}" criado`)
     console.log(`  clientes: https://${company.host}`)
     console.log(`  equipe:   https://${STAFF_PREFIX}${company.host}`)
-    console.log(`  dono:     ${owner.name} (${formatPhone(owner.phone)})`)
+    console.log(`  dono:     ${owner.name} <${owner.email}> (${formatPhone(owner.phone)})`)
   } catch (erro) {
     // Erro de uso não precisa de pilha: quem roda isso quer saber o que corrigir.
     console.error(`erro: ${erro instanceof Error ? erro.message : erro}`)

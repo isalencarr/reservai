@@ -633,3 +633,45 @@ h2 {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+.history li.bad .detail,
+.history li.bad span:first-child {
+  color: var(--danger);
+}
+
+/* --- menu da área da equipe --- */
+header.app .wrap .signout {
+  margin-left: auto;
+}
+
+.menu {
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.menu-items {
+  display: flex;
+  gap: 4px;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  white-space: nowrap;
+}
+
+.menu a {
+  padding: 12px 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.menu a:hover {
+  color: var(--text);
+}
+
+.menu a.on {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}

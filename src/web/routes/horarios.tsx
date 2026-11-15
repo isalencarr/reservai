@@ -1,15 +1,15 @@
 import { type Context, Hono } from 'hono'
-import type { Db } from '../../db/client.ts'
 import { availableStarts } from '../../domain/availability.ts'
 import { workingIntervals } from '../../domain/schedule.ts'
 import { addDays, type LocalDate, localDate, toUtc } from '../../domain/time.ts'
 import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
 import { createServiceRepo } from '../../repos/services.ts'
+import type { Deps } from '../deps.ts'
 import { type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Horarios, type HorariosProps } from '../views/horarios.tsx'
-import { Layout } from '../views/layout.tsx'
+import { StaffLayout } from '../views/staff-layout.tsx'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -17,13 +17,13 @@ function readDate(raw: string | undefined, timeZone: string): LocalDate {
   return raw && DATE_PATTERN.test(raw) ? raw : localDate(new Date(), timeZone)
 }
 
-export function horariosRoutes(db: Db) {
+export function horariosRoutes({ db, auth }: Deps) {
   const serviceRepo = createServiceRepo(db)
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(providerRepo))
+  app.use('*', staffMiddleware(auth, providerRepo))
 
   app.get('/', async (c: Context<StaffEnv>) => {
     const company = c.get('company')
@@ -60,9 +60,9 @@ export function horariosRoutes(db: Db) {
     return c.req.header('HX-Request')
       ? c.html(<Horarios {...props} />)
       : c.html(
-          <Layout title="Horários" companyName={company.name}>
+          <StaffLayout title="Horários" company={company} staff={c.get('staff')} active="horarios">
             <Horarios {...props} />
-          </Layout>,
+          </StaffLayout>,
         )
   })
 

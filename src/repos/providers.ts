@@ -6,6 +6,7 @@ import { defaultWorkweek } from '../domain/workday.ts'
 
 export type ProviderInput = {
   name: string
+  email: string
   phone: string
   role: Provider['role']
   slotMinutes: number
@@ -18,9 +19,11 @@ export interface ProviderRepo {
   update(companyId: string, id: string, input: ProviderInput): Promise<Provider | undefined>
   setActive(companyId: string, id: string, active: boolean): Promise<Provider | undefined>
   countOtherOwners(companyId: string, exceptId: string): Promise<number>
+  markJoined(id: string, at: Date): Promise<void>
   listByCompany(companyId: string): Promise<Provider[]>
   findById(companyId: string, id: string): Promise<Provider | undefined>
   findByPhone(companyId: string, phone: string): Promise<Provider | undefined>
+  findByEmail(companyId: string, email: string): Promise<Provider | undefined>
   hoursFor(providerId: string): Promise<WorkHour[]>
 }
 
@@ -100,6 +103,18 @@ export function createProviderRepo(db: Db): ProviderRepo {
     async findByPhone(companyId, phone) {
       return db.query.providers.findFirst({
         where: and(eq(providers.companyId, companyId), eq(providers.phone, phone)),
+      })
+    },
+
+    async markJoined(id, at) {
+      await db.update(providers).set({ joinedAt: at }).where(eq(providers.id, id))
+    },
+
+    /** O e-mail chega da sessão, então a busca ignora caixa e espaços. */
+    async findByEmail(companyId, email) {
+      const normalized = email.trim().toLowerCase()
+      return db.query.providers.findFirst({
+        where: and(eq(providers.companyId, companyId), eq(providers.email, normalized)),
       })
     },
 

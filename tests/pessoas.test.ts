@@ -13,9 +13,9 @@ async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
-  const asStaff = async (phone: string) => ({
+  const asStaff = async (email: string) => ({
     host: HOST,
-    cookie: await staffLogin(app, notifier, HOST, phone),
+    cookie: await staffLogin(app, notifier, HOST, email),
   })
   const form = (values: Record<string, string>, cookie: string) => ({
     method: 'POST',
@@ -30,13 +30,19 @@ async function setup() {
   return { ...seeded, notifier, app, asStaff, form }
 }
 
-const PESSOA = { nome: 'Bia Souza', telefone: '(11) 96666-1111', slot: '30', antecedencia: '60' }
+const PESSOA = {
+  nome: 'Bia Souza',
+  email: 'bia@salao.com.br',
+  telefone: '(11) 96666-1111',
+  slot: '30',
+  antecedencia: '60',
+}
 
 describe('cadastro da equipe', () => {
   it('só o dono abre a tela', async () => {
     const s = await setup()
-    const dono = await s.asStaff(s.carla.phone)
-    const prestador = await s.asStaff(s.rafa.phone)
+    const dono = await s.asStaff(s.carla.email ?? '')
+    const prestador = await s.asStaff(s.rafa.email ?? '')
 
     expect((await s.app.request('/equipe/pessoas', { headers: dono })).status).toBe(200)
     expect((await s.app.request('/equipe/pessoas', { headers: prestador })).status).toBe(403)
@@ -44,12 +50,17 @@ describe('cadastro da equipe', () => {
 
   it('adiciona alguém já com jornada', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
     const res = await s.app.request('/equipe/pessoas', s.form(PESSOA, cookie))
     expect(res.status).toBe(200)
 
     const [bia] = await s.db.select().from(providers).where(eq(providers.name, 'Bia Souza'))
-    expect(bia).toMatchObject({ phone: '11966661111', role: 'provider', slotMinutes: 30 })
+    expect(bia).toMatchObject({
+      phone: '11966661111',
+      email: 'bia@salao.com.br',
+      role: 'provider',
+      slotMinutes: 30,
+    })
 
     const jornada = await s.db
       .select()
@@ -60,10 +71,10 @@ describe('cadastro da equipe', () => {
 
   it('quem entra na equipe consegue abrir a própria agenda', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
     await s.app.request('/equipe/pessoas', s.form(PESSOA, cookie))
 
-    const headers = await s.asStaff('11966661111')
+    const headers = await s.asStaff('bia@salao.com.br')
     const [bia] = await s.db.select().from(providers).where(eq(providers.name, 'Bia Souza'))
     const res = await s.app.request(`/agenda/${bia?.id}?date=${MONDAY}`, { headers })
     expect(res.status).toBe(200)
@@ -72,7 +83,7 @@ describe('cadastro da equipe', () => {
 
   it('recusa telefone repetido e slot fora da faixa', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
 
     const repetido = await s.app.request(
       '/equipe/pessoas',
@@ -81,19 +92,26 @@ describe('cadastro da equipe', () => {
     expect(repetido.status).toBe(422)
     expect(await repetido.text()).toContain('Já existe alguém com esse telefone')
 
-    const slot = await s.app.request('/equipe/pessoas', s.form({ ...PESSOA, slot: '3' }, cookie))
+    const slot = await s.app.request(
+      '/equipe/pessoas',
+      s.form(
+        { ...PESSOA, email: 'outra@salao.com.br', telefone: '11966662222', slot: '3' },
+        cookie,
+      ),
+    )
     expect(slot.status).toBe(422)
     expect(await slot.text()).toContain('entre 5 e 240 minutos')
   })
 
   it('edita papel e antecedência', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
     await s.app.request(
       `/equipe/pessoas/${s.rafa.id}`,
       s.form(
         {
           nome: 'Rafa Lima',
+          email: s.rafa.email ?? '',
           telefone: s.rafa.phone,
           papel: 'owner',
           slot: '30',
@@ -109,8 +127,8 @@ describe('cadastro da equipe', () => {
 
   it('tira da equipe quem saiu, e essa pessoa perde o acesso', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
-    const rafaHeaders = await s.asStaff(s.rafa.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
+    const rafaHeaders = await s.asStaff(s.rafa.email ?? '')
 
     await s.app.request(`/equipe/pessoas/${s.rafa.id}/ativo`, s.form({ ativo: 'nao' }, cookie))
 
@@ -123,7 +141,7 @@ describe('cadastro da equipe', () => {
 
   it('não deixa o dono tirar a si mesmo nem o salão ficar sem dono', async () => {
     const s = await setup()
-    const { cookie } = await s.asStaff(s.carla.phone)
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
 
     const eu = await s.app.request(
       `/equipe/pessoas/${s.carla.id}/ativo`,
@@ -137,6 +155,7 @@ describe('cadastro da equipe', () => {
       s.form(
         {
           nome: 'Carla Mendes',
+          email: s.carla.email ?? '',
           telefone: s.carla.phone,
           papel: 'provider',
           slot: '60',
@@ -155,6 +174,7 @@ describe('criação de salão pelo terminal', () => {
     nome: 'Salão da Inês',
     host: 'ines.com.br',
     dono: 'Inês Prado',
+    email: 'ines@ines.com.br',
     telefone: '(11) 95555-2222',
   }
 
@@ -178,7 +198,7 @@ describe('criação de salão pelo terminal', () => {
     const notifier = createLogNotifier(false)
     const app = createApp(db, notifier)
 
-    const cookie = await staffLogin(app, notifier, 'equipe.ines.com.br', owner.phone)
+    const cookie = await staffLogin(app, notifier, 'equipe.ines.com.br', owner.email ?? '')
     const res = await app.request('/clientes', { headers: { host: 'equipe.ines.com.br', cookie } })
     expect(res.status).toBe(200)
   })

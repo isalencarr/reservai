@@ -40,9 +40,13 @@ export const providers = sqliteTable(
       .references(() => companies.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     phone: text('phone').notNull(),
+    /** Identidade de acesso da equipe. O telefone virou só contato. */
+    email: text('email'),
     role: text('role', { enum: ['owner', 'provider'] })
       .notNull()
       .default('provider'),
+    /** Primeiro acesso: enquanto for nulo, a pessoa é convite pendente. */
+    joinedAt: timestamp('joined_at'),
     slotMinutes: integer('slot_minutes').notNull().default(60),
     minLeadMinutes: integer('min_lead_minutes').notNull().default(60),
     active: integer('active', { mode: 'boolean' }).notNull().default(true),
@@ -50,7 +54,10 @@ export const providers = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (t) => [unique('providers_company_phone').on(t.companyId, t.phone)],
+  (t) => [
+    unique('providers_company_phone').on(t.companyId, t.phone),
+    unique('providers_company_email').on(t.companyId, t.email),
+  ],
 )
 
 /** Jornada semanal em minutos desde a meia-noite local. Uma linha por faixa
@@ -210,3 +217,90 @@ export const accessCodes = sqliteTable(
 )
 
 export type AccessCode = typeof accessCodes.$inferSelect
+
+/* --------------------------------------------------------------------------
+ * Tabelas da biblioteca de autenticação (Better Auth).
+ *
+ * Os nomes das propriedades são os que o adapter procura; os nomes das colunas
+ * seguem a convenção do resto do schema. Só a equipe usa estas tabelas: o
+ * cliente continua entrando por telefone e código.
+ * ----------------------------------------------------------------------- */
+
+export const user = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  image: text('image'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+})
+
+export const session = sqliteTable('sessions', {
+  id: text('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  expiresAt: timestamp('expires_at').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+})
+
+export const account = sqliteTable('accounts', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull(),
+  updatedAt: timestamp('updated_at').notNull(),
+})
+
+export const verification = sqliteTable('verifications', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at'),
+  updatedAt: timestamp('updated_at'),
+})
+
+export type User = typeof user.$inferSelect
+export type Session = typeof session.$inferSelect
+
+export const AUTH_EVENT_TYPES = ['login', 'logout', 'login_failed'] as const
+
+/**
+ * Registro de acesso da equipe. Guarda o suficiente para investigar um acesso
+ * estranho, e só isso: e-mail mascarado e IP sem o último trecho. Ver
+ * `src/domain/privacy.ts`.
+ */
+export const authEvents = sqliteTable(
+  'auth_events',
+  {
+    id: id(),
+    companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: AUTH_EVENT_TYPES }).notNull(),
+    emailMasked: text('email_masked').notNull(),
+    ip: text('ip').notNull().default(''),
+    userAgent: text('user_agent'),
+    reason: text('reason'),
+    createdAt: timestamp('created_at')
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('auth_events_company_created').on(t.companyId, t.createdAt)],
+)
+
+export type AuthEvent = typeof authEvents.$inferSelect

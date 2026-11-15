@@ -19,7 +19,7 @@ bun run dev        # http://beleza-pura.localhost:3000
 
 Salões de exemplo: `beleza-pura.localhost:3000` e `studio-norte.localhost:3000`,
 com a equipe em `equipe.beleza-pura.localhost:3000`. O dono de exemplo é a Carla,
-telefone `11988880001`; o código de acesso sai no terminal do servidor.
+e-mail `carla@belezapura.com.br`; o link de acesso sai no terminal do servidor.
 
 ### Criar um salão de verdade
 
@@ -63,23 +63,29 @@ linha 6: o typescript-eslint ainda não suporta a 7.
 
 ## Telas
 
-| Rota                    | Endereço | Quem acessa                              |
-| ----------------------- | -------- | ---------------------------------------- |
-| `/`                     | cliente  | qualquer pessoa                          |
-| `/entrar`               | cliente  | nome, telefone e código                  |
-| `/reserva`              | cliente  | pedido em passos                         |
-| `/reserva/meus`         | cliente  | seus horários e cancelamento             |
-| `/` e `/equipe`         | equipe   | painel com o que a pessoa pode abrir     |
-| `/equipe/entrar`        | equipe   | telefone cadastrado e código             |
-| `/equipe/pessoas`       | equipe   | só o dono: adicionar, editar e desativar |
-| `/agenda/:prestador`    | equipe   | o próprio prestador ou o dono            |
-| `/pendentes/:prestador` | equipe   | o próprio prestador ou o dono            |
-| `/horarios`             | equipe   | conferência da disponibilidade           |
-| `/servicos`             | equipe   | só o dono                                |
-| `/clientes`             | equipe   | só o dono                                |
+| Rota                    | Endereço | Quem acessa                                |
+| ----------------------- | -------- | ------------------------------------------ |
+| `/`                     | cliente  | qualquer pessoa                            |
+| `/entrar`               | cliente  | nome, telefone e código                    |
+| `/reserva`              | cliente  | pedido em passos                           |
+| `/reserva/meus`         | cliente  | seus horários e cancelamento               |
+| `/equipe/entrar`        | equipe   | e-mail e link de acesso                    |
+| `/equipe`               | equipe   | agendas do salão; prestador cai na própria |
+| `/equipe/pessoas`       | equipe   | só o dono: convidar, editar e desativar    |
+| `/equipe/acessos`       | equipe   | só o dono: entradas, saídas e recusas      |
+| `/agenda/:prestador`    | equipe   | o próprio prestador ou o dono              |
+| `/pendentes/:prestador` | equipe   | o próprio prestador ou o dono              |
+| `/horarios`             | equipe   | conferência da disponibilidade             |
+| `/servicos`             | equipe   | só o dono                                  |
+| `/clientes`             | equipe   | só o dono                                  |
 
-Em desenvolvimento os códigos de acesso aparecem no terminal do servidor, com o
-prefixo `[notify:access-code]`.
+A equipe entra por e-mail: pede um link em `/equipe/entrar` e o link chega pelo
+notificador. Em desenvolvimento ele aparece no terminal do servidor, com o
+prefixo `[notify:magic-link]`; o código do cliente sai como `[notify:access-code]`.
+
+Ninguém se cadastra sozinho: o link só é emitido para e-mail que já está na
+equipe ativa daquele salão. O dono convida em `/equipe/pessoas`, e a pessoa
+recebe o link na hora.
 
 ## Regras já decididas
 
@@ -94,9 +100,11 @@ prefixo `[notify:access-code]`.
 7. O cliente escolhe sempre um prestador; não existe "qualquer profissional".
 8. O cliente cancela sozinho até 2h antes; depois disso, só pelo salão.
 9. Recusar um pedido não exige motivo.
-10. Cliente e equipe entram com telefone e código de 6 dígitos (10 minutos, 5
-    tentativas). São portas separadas: um código não abre a outra. A sessão fica
-    num cookie assinado, válido só naquele salão.
+10. O cliente entra com telefone e código de 6 dígitos (10 minutos, 5
+    tentativas). A equipe entra por e-mail, com link de acesso válido por 15
+    minutos e sessão de 7 dias. São portas e endereços separados.
 11. O prestador mexe na própria agenda e na própria fila. Catálogo, carteira e
     cadastro da equipe são do dono.
 12. Quem entra na equipe nasce com jornada de segunda a sábado, 9h–12h e 13h–18h.
+13. Entrada, saída e tentativa recusada ficam registradas com e-mail mascarado e
+    IP truncado, visíveis em `/equipe/acessos`.

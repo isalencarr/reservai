@@ -14,7 +14,7 @@ async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
-  const cookie = await staffLogin(app, notifier, HOST, seeded.carla.phone)
+  const cookie = await staffLogin(app, notifier, HOST, seeded.carla.email ?? '')
   const plain = { host: HOST, cookie }
   const headers = { ...plain, 'HX-Request': 'true' }
   const form = (values: Record<string, string>) => ({

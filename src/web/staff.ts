@@ -1,7 +1,7 @@
 import type { Context, MiddlewareHandler } from 'hono'
+import type { Auth } from '../auth/config.ts'
 import type { Provider } from '../db/schema.ts'
 import type { ProviderRepo } from '../repos/providers.ts'
-import { readStaffId } from './auth.ts'
 import type { TenantEnv } from './tenant.ts'
 
 export type StaffEnv = TenantEnv & {
@@ -19,18 +19,34 @@ function redirectToLogin(c: Context<StaffEnv>) {
   return c.redirect(target, 303)
 }
 
-export function staffMiddleware(repo: ProviderRepo): MiddlewareHandler<StaffEnv> {
+/**
+ * A sessão é da biblioteca e vale para a pessoa; quem define o que ela pode
+ * fazer é o cadastro da equipe naquele salão. Um e-mail com sessão válida que
+ * não esteja na equipe deste domínio não entra.
+ */
+export async function staffOf(
+  auth: Auth,
+  repo: ProviderRepo,
+  c: Context<StaffEnv>,
+): Promise<Provider | undefined> {
+  const session = await auth.api.getSession({ headers: c.req.raw.headers })
+  const email = session?.user.email
+  if (!email) return undefined
+
+  const staff = await repo.findByEmail(c.get('company').id, email)
+  return staff?.active ? staff : undefined
+}
+
+export function staffMiddleware(auth: Auth, repo: ProviderRepo): MiddlewareHandler<StaffEnv> {
   return async (c, next) => {
-    const company = c.get('company')
-    const staffId = await readStaffId(c, company.id)
-    const staff = staffId ? await repo.findById(company.id, staffId) : undefined
-    if (!staff?.active) return redirectToLogin(c)
+    const staff = await staffOf(auth, repo, c)
+    if (!staff) return redirectToLogin(c)
     c.set('staff', staff)
     await next()
   }
 }
 
-/** Catálogo e carteira são do salão, não de quem atende. */
+/** Catálogo, carteira e cadastro da equipe são do salão, não de quem atende. */
 export function requireOwner(): MiddlewareHandler<StaffEnv> {
   return async (c, next) => {
     if (c.get('staff').role !== 'owner') {

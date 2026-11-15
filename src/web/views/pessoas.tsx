@@ -17,6 +17,17 @@ const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
         <input type="text" name="nome" required value={pessoa?.name ?? ''} />
       </label>
       <label>
+        E-mail
+        <input
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          placeholder="nome@salao.com.br"
+          value={pessoa?.email ?? ''}
+        />
+      </label>
+      <label>
         Telefone com DDD
         <input
           type="tel"
@@ -78,6 +89,15 @@ const Editar: FC<{ pessoa: Provider; me: Provider; error?: string }> = ({ pessoa
           <button type="submit" class="btn">
             Salvar
           </button>
+          {pessoa.active ? (
+            <button
+              type="button"
+              class="btn ghost"
+              hx-post={`/equipe/pessoas/${pessoa.id}/convite`}
+            >
+              {pessoa.joinedAt ? 'Enviar link de acesso' : 'Reenviar convite'}
+            </button>
+          ) : null}
           {pessoa.id === me.id ? null : (
             <button
               type="button"
@@ -101,8 +121,8 @@ export const Pessoas: FC<PessoasProps> = ({ items, me, editing, error }) => (
   <section id="pessoas" hx-target="#pessoas" hx-swap="outerHTML">
     <h2>Equipe</h2>
     <p class="muted">
-      Quem entra aqui recebe jornada de segunda a sábado, das 9h às 12h e das 13h às 18h, e pode
-      ajustar depois na própria agenda.
+      A pessoa entra pelo e-mail: ela recebe um link de acesso. A jornada já nasce de segunda a
+      sábado, das 9h às 12h e das 13h às 18h.
     </p>
 
     <div class="catalog-layout">
@@ -123,6 +143,9 @@ export const Pessoas: FC<PessoasProps> = ({ items, me, editing, error }) => (
               <span>
                 {pessoa.name}
                 {pessoa.role === 'owner' ? ' · dono' : ''}
+                {pessoa.active && !pessoa.joinedAt ? (
+                  <small class="tag"> convite pendente</small>
+                ) : null}
               </span>
               <button type="button" class="link" hx-get={`/equipe/pessoas?editar=${pessoa.id}`}>
                 editar
