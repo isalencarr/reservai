@@ -1,0 +1,1 @@
+ALTER TABLE `providers` ADD `min_lead_minutes` integer DEFAULT 60 NOT NULL;

@@ -1,0 +1,44 @@
+import { type Context, Hono } from 'hono'
+import type { Db } from '../../db/client.ts'
+import { createAppointmentRepo } from '../../repos/appointments.ts'
+import { createCustomerRepo } from '../../repos/customers.ts'
+import { createProviderRepo } from '../../repos/providers.ts'
+import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
+import { requireArea } from '../tenant.ts'
+import { Clientes, type ClientesProps } from '../views/clientes.tsx'
+import { Layout } from '../views/layout.tsx'
+
+export function clientesRoutes(db: Db) {
+  const customerRepo = createCustomerRepo(db)
+  const appointmentRepo = createAppointmentRepo(db)
+  const app = new Hono<StaffEnv>()
+
+  app.use('*', requireArea('staff'))
+  app.use('*', staffMiddleware(createProviderRepo(db)))
+  app.use('*', requireOwner())
+
+  app.get('/', async (c: Context<StaffEnv>) => {
+    const company = c.get('company')
+    const query = c.req.query('q') ?? ''
+    const items = await customerRepo.list(company.id, query)
+
+    const wanted = c.req.query('ver')
+    const customer = items.find((item) => item.id === wanted)
+    const viewing = customer
+      ? { customer, history: await appointmentRepo.listByCustomer(company.id, customer.id) }
+      : undefined
+
+    const view: ClientesProps = { items, query, timeZone: company.timezone, viewing }
+    return c.html(
+      c.req.header('HX-Request') ? (
+        <Clientes {...view} />
+      ) : (
+        <Layout title="Clientes" companyName={company.name}>
+          <Clientes {...view} />
+        </Layout>
+      ),
+    )
+  })
+
+  return app
+}

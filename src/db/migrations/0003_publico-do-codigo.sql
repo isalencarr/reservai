@@ -1,0 +1,1 @@
+ALTER TABLE `access_codes` ADD `audience` text DEFAULT 'customer' NOT NULL;

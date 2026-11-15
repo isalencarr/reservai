@@ -1,0 +1,36 @@
+{
+  "name": "reservai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/web/server.ts",
+    "start": "bun src/web/server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check --error-on-warnings . && eslint .",
+    "lint:fix": "biome check --write --error-on-warnings .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate.ts",
+    "db:seed": "bun src/db/seed.ts",
+    "db:reset": "rm -f data/*.sqlite && bun run db:migrate && bun run db:seed",
+    "check": "bun run lint && bun run typecheck && bun test",
+    "jobs:expire": "bun src/jobs/expire.ts",
+    "salao:novo": "bun src/cli/novo-salao.ts",
+    "lint:deprecated": "eslint ."
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.18",
+    "htmx.org": "^2.0.11"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "^1.4.4",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^10.15.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}
