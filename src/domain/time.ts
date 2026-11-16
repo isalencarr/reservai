@@ -39,6 +39,19 @@ function partsOf(instant: Date, timeZone: string) {
   }
 }
 
+/**
+ * Fuso que o Intl reconhece. Um fuso errado no cadastro do salão só apareceria
+ * depois, como horário trocado em toda tela que mostra data.
+ */
+export function isTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('pt-BR', { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Deslocamento do fuso naquele instante, em milissegundos. */
 export function offsetMs(instant: Date, timeZone: string): number {
   const p = partsOf(instant, timeZone)

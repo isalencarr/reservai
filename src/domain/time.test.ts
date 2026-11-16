@@ -3,6 +3,7 @@ import {
   addDays,
   formatMinute,
   formatTime,
+  isTimeZone,
   localDate,
   minuteOfDay,
   toUtc,
@@ -56,5 +57,18 @@ describe('formatação', () => {
 
   it('formata o instante no fuso do salão', () => {
     expect(formatTime(new Date('2026-11-16T12:00:00Z'), SP)).toBe('09:00')
+  })
+})
+
+describe('isTimeZone', () => {
+  it('aceita fuso conhecido', () => {
+    expect(isTimeZone(SP)).toBe(true)
+    expect(isTimeZone('UTC')).toBe(true)
+  })
+
+  it('recusa o que o Intl não conhece', () => {
+    expect(isTimeZone('America/Sao Paulo')).toBe(false)
+    expect(isTimeZone('qualquer-coisa')).toBe(false)
+    expect(isTimeZone('')).toBe(false)
   })
 })

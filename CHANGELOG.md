@@ -3,6 +3,19 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 1.2 — Salões pelo backoffice — 2026-11-15
+
+- Dá para criar salão pela web: nome, endereço, apelido, fuso e o primeiro dono,
+  que recebe o link de acesso na porta da equipe dele.
+- Dá para editar nome, endereço, apelido e fuso de um salão existente. Mudar o
+  endereço muda onde ele atende, e a tela avisa isso.
+- O fuso passou a ser escolhido numa lista dos fusos do Brasil, e um fuso que o
+  sistema não conhece é recusado em vez de virar horário trocado nas telas.
+- A regra de criar salão saiu do comando de terminal para `src/platform/`, usada
+  pelos dois caminhos. Erro de cadastro virou resposta com mensagem, então a
+  mesma frase aparece no terminal e no formulário.
+- `bun run salao:novo` continua funcionando igual.
+
 ## 1.1 — Porta do backoffice — 2026-11-15
 
 - Existe um terceiro endereço, o do backoffice (`BACKOFFICE_HOST`, em

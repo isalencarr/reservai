@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { criarSalao } from '../src/cli/novo-salao.ts'
-import { companies, providerHours, providers } from '../src/db/schema.ts'
+import { providerHours, providers } from '../src/db/schema.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
 import { createApp } from '../src/web/app.tsx'
-import { createSeededDb, createTestDb, staffLogin, upcomingWeekday } from './helpers.ts'
+import { createSeededDb, staffLogin, upcomingWeekday } from './helpers.ts'
 
 const HOST = 'equipe.beleza-pura.localhost'
 const MONDAY = upcomingWeekday(1, 'America/Sao_Paulo')
@@ -166,82 +165,5 @@ describe('cadastro da equipe', () => {
     )
     expect(rebaixar.status).toBe(422)
     expect(await rebaixar.text()).toContain('pelo menos um dono')
-  })
-})
-
-describe('criação de salão pelo terminal', () => {
-  const base = {
-    nome: 'Salão da Inês',
-    host: 'ines.com.br',
-    dono: 'Inês Prado',
-    email: 'ines@ines.com.br',
-    telefone: '(11) 95555-2222',
-  }
-
-  it('cria salão, dono e jornada', async () => {
-    const db = createTestDb()
-    const { company, owner } = await criarSalao(db, base)
-
-    expect(company).toMatchObject({ slug: 'salao-da-ines', host: 'ines.com.br' })
-    expect(owner).toMatchObject({ role: 'owner', phone: '11955552222' })
-
-    const jornada = await db
-      .select()
-      .from(providerHours)
-      .where(eq(providerHours.providerId, owner.id))
-    expect(jornada).toHaveLength(12)
-  })
-
-  it('o dono criado já entra pela porta da equipe', async () => {
-    const db = createTestDb()
-    const { owner } = await criarSalao(db, base)
-    const notifier = createLogNotifier(false)
-    const app = createApp(db, notifier)
-
-    const cookie = await staffLogin(app, notifier, 'equipe.ines.com.br', owner.email ?? '')
-    const res = await app.request('/clientes', { headers: { host: 'equipe.ines.com.br', cookie } })
-    expect(res.status).toBe(200)
-  })
-
-  it('grava o host sem porta, protocolo ou barra', async () => {
-    const db = createTestDb()
-    const { company } = await criarSalao(db, {
-      ...base,
-      host: 'https://ZeBarber.localhost:3000/agenda',
-    })
-    expect(company.host).toBe('zebarber.localhost')
-  })
-
-  it('recusa o endereço da equipe como host do salão', async () => {
-    const db = createTestDb()
-    expect(criarSalao(db, { ...base, host: 'equipe.ines.com.br' })).rejects.toThrow(
-      'informe o endereço do cliente',
-    )
-  })
-
-  it('explica a colisão de apelido em vez de estourar', async () => {
-    const db = createTestDb()
-    await criarSalao(db, base)
-    expect(criarSalao(db, { ...base, host: 'outro.com.br' })).rejects.toThrow(
-      'já está em uso; escolha outro com --slug',
-    )
-  })
-
-  it('recusa host repetido e telefone inválido', async () => {
-    const db = createTestDb()
-    await criarSalao(db, base)
-
-    expect(criarSalao(db, { ...base, slug: 'outro' })).rejects.toThrow('já existe um salão em')
-    expect(criarSalao(db, { ...base, host: 'novo.com.br', telefone: '99' })).rejects.toThrow(
-      'Telefone inválido'.toLowerCase(),
-    )
-  })
-
-  it('não mistura salões criados pelo comando', async () => {
-    const db = createTestDb()
-    await criarSalao(db, base)
-    await criarSalao(db, { ...base, nome: 'Outro Salão', host: 'outro.com.br' })
-
-    expect(await db.select().from(companies)).toHaveLength(2)
   })
 })

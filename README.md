@@ -47,8 +47,10 @@ bun run salao:novo --nome "Barbearia do Zé" --host zebarber.com.br \
   --dono "José Alves" --telefone 11944440001
 ```
 
-O comando cria o salão e o primeiro dono, que entra por `equipe.<host>`. Não há
-tela pública de criação de salão: isso é operação de quem administra o servidor.
+O comando cria o salão e o primeiro dono, que entra por `equipe.<host>`. O
+backoffice faz o mesmo pela web, com a mesma regra (`src/platform/saloes.ts`).
+Não há tela pública de criação de salão: isso é operação de quem administra a
+plataforma.
 
 ## Comandos
 
@@ -95,6 +97,8 @@ HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
 - `src/web/` — servidor Hono, resolução do salão pelo domínio, rotas e telas (HTMX).
 - `src/web/backoffice/` — o app da plataforma. Host próprio, sem salão no
   contexto: nenhuma rota daqui enxerga `company`.
+- `src/platform/` — operações da plataforma sobre os salões (criar, editar).
+  Usadas pelo backoffice e pelo comando de terminal, com a mesma regra.
 - `src/notify/` — mensagens fora da tela. Hoje só a versão em log; o canal real
   (WhatsApp ou SMS) entra quando houver salão piloto.
 - `src/jobs/` — rotinas que também rodam fora da web, como a expiração de pedidos.
