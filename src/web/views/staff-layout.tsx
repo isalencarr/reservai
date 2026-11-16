@@ -117,7 +117,17 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
           </div>
         </nav>
       </header>
-      <main class="wrap">{children}</main>
+      <main class="wrap">
+        {/* O aviso sai do próprio salão, então toda tela interna o mostra sem
+            cada rota precisar lembrar de passar. */}
+        {company.status === 'suspended' ? (
+          <p class="error">
+            Salão suspenso: o cliente não consegue marcar horário novo. O que já está confirmado
+            segue na agenda.
+          </p>
+        ) : null}
+        {children}
+      </main>
     </body>
   </html>
 )

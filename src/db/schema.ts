@@ -14,12 +14,18 @@ const id = () =>
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID())
 
+export const COMPANY_STATUS = ['active', 'suspended'] as const
+
 export const companies = sqliteTable('companies', {
   id: id(),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   host: text('host').notNull().unique(),
   timezone: text('timezone').notNull().default('America/Sao_Paulo'),
+  /** Suspenso não recebe pedido novo, mas continua mostrando o que já foi
+   * confirmado: cortar a agenda de quem já marcou puniria o cliente. */
+  status: text('status', { enum: COMPANY_STATUS }).notNull().default('active'),
+  suspendedAt: timestamp('suspended_at'),
   /** Cor-semente do Material You: a paleta inteira é gerada a partir dela. */
   themeSeed: text('theme_seed').notNull().default('#6750A4'),
   themeMode: text('theme_mode', { enum: ['auto', 'light', 'dark'] })
@@ -313,6 +319,31 @@ export type AuthEvent = typeof authEvents.$inferSelect
 /* --------------------------------------------------------------------------
  * Plataforma: o que existe acima dos salões.
  * ----------------------------------------------------------------------- */
+
+export const SUBSCRIPTION_PLANS = ['mensal', 'anual'] as const
+
+/**
+ * Assinatura do salão, conferida na mão: plano, valor e até quando está pago.
+ * Sem cobrança automática e sem suspensão automática — quem administra olha a
+ * lista de vencidos e decide. `paid_until` nulo é salão sem pagamento nenhum
+ * registrado, que é diferente de vencido.
+ */
+export const subscriptions = sqliteTable('subscriptions', {
+  id: id(),
+  companyId: text('company_id')
+    .notNull()
+    .unique()
+    .references(() => companies.id, { onDelete: 'cascade' }),
+  plan: text('plan', { enum: SUBSCRIPTION_PLANS }).notNull().default('mensal'),
+  priceCents: integer('price_cents'),
+  paidUntil: timestamp('paid_until'),
+  note: text('note'),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export type Subscription = typeof subscriptions.$inferSelect
 
 /**
  * Quem pode abrir o backoffice. Tabela própria em vez de uma coluna em `users`

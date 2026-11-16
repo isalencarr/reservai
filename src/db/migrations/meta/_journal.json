@@ -57,6 +57,13 @@
       "when": 1794789469435,
       "tag": "0007_admin-da-plataforma",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794791047522,
+      "tag": "0008_assinatura-e-suspensao",
+      "breakpoints": true
     }
   ]
 }

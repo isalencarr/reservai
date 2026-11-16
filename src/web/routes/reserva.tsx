@@ -19,6 +19,7 @@ import { createProviderRepo } from '../../repos/providers.ts'
 import { createServiceRepo } from '../../repos/services.ts'
 import { readCustomerId } from '../customer-session.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
+import { Indisponivel } from '../views/indisponivel.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Meus, type MeusProps, Reserva, type ReservaProps } from '../views/reserva.tsx'
 
@@ -96,8 +97,20 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
       ),
     )
 
+  /** Salão suspenso não recebe pedido novo. A tela de "meus horários" e o
+   * cancelamento continuam: quem já marcou não perde o que combinou. */
+  const suspenso = (c: Context<CustomerEnv>) => c.get('company').status === 'suspended'
+
   app.get('/', async (c) => {
     const company = c.get('company')
+    if (suspenso(c)) {
+      return c.html(
+        <Layout title="Agendar" company={company}>
+          <Indisponivel />
+        </Layout>,
+      )
+    }
+
     const timeZone = company.timezone
     const customer = await customerRepo.findById(company.id, c.get('customerId'))
     if (!customer) return c.redirect('/entrar', 303)
@@ -163,6 +176,10 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
 
   app.post('/', async (c) => {
     const company = c.get('company')
+    if (suspenso(c)) {
+      return meus(c, 'O salão não está recebendo novos agendamentos.', 403)
+    }
+
     const body = await c.req.parseBody()
     const customerId = c.get('customerId')
 

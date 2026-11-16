@@ -1,10 +1,13 @@
 import { type Context, Hono } from 'hono'
 import { normalizeEmail } from '../../domain/email.ts'
+import { parsePrice } from '../../domain/money.ts'
 import { clientIp } from '../../domain/privacy.ts'
+import { paidUntilInstant } from '../../domain/subscription.ts'
 import { criarSalao, editarSalao, type Identidade, type NovoSalao } from '../../platform/saloes.ts'
 import { createAuthEventRepo } from '../../repos/auth-events.ts'
 import { createCompanyRepo } from '../../repos/companies.ts'
 import { createPlatformAdminRepo } from '../../repos/platform-admins.ts'
+import { createSubscriptionRepo } from '../../repos/subscriptions.ts'
 import type { Deps } from '../deps.ts'
 import { type PlatformEnv, platformAdminMiddleware } from './admin.ts'
 import { EntrarBackoffice, type EntrarProps } from './views/entrar.tsx'
@@ -44,6 +47,7 @@ function lerNovoSalao(body: Record<string, unknown>): NovoSalao {
 export function backofficeApp({ db, auth }: Deps) {
   const adminRepo = createPlatformAdminRepo(db)
   const companyRepo = createCompanyRepo(db)
+  const subscriptionRepo = createSubscriptionRepo(db)
   const eventRepo = createAuthEventRepo(db)
   const app = new Hono<PlatformEnv>()
 
@@ -110,11 +114,16 @@ export function backofficeApp({ db, auth }: Deps) {
   painel.use('*', platformAdminMiddleware(auth, adminRepo))
 
   async function props(options: { error?: string; editingId?: string } = {}) {
-    const items = await companyRepo.listAll()
+    const assinaturas = await subscriptionRepo.listAll()
+    const items = (await companyRepo.listAll()).map((company) => ({
+      company,
+      subscription: assinaturas.find((a) => a.companyId === company.id),
+    }))
     return {
       items,
-      editing: items.find((company) => company.id === options.editingId),
+      editing: items.find((row) => row.company.id === options.editingId),
       error: options.error,
+      now: new Date(),
     }
   }
 
@@ -135,6 +144,46 @@ export function backofficeApp({ db, auth }: Deps) {
     const feito = await criarSalao(db, lerNovoSalao(await c.req.parseBody()))
     if ('erro' in feito) return mostrar(c, await props({ error: feito.erro }), 422)
     return mostrar(c, await props())
+  })
+
+  /** Marcar pagamento é o gesto mais repetido daqui, então o modal fica aberto
+   * em vez de fechar a cada salvamento. */
+  painel.post('/saloes/:id/assinatura', async (c) => {
+    const id = c.req.param('id')
+    const company = await companyRepo.findById(id)
+    if (!company) return c.notFound()
+
+    const body = await c.req.parseBody()
+    const plano = body.plano === 'anual' ? 'anual' : 'mensal'
+    const priceCents = parsePrice(typeof body.valor === 'string' ? body.valor : undefined)
+    if (priceCents === undefined) {
+      return mostrar(
+        c,
+        await props({ error: 'Valor inválido. Use algo como 149,00.', editingId: id }),
+        422,
+      )
+    }
+
+    const dia = typeof body.pago_ate === 'string' ? body.pago_ate.trim() : ''
+    if (dia !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(dia)) {
+      return mostrar(c, await props({ error: 'Data de pagamento inválida.', editingId: id }), 422)
+    }
+
+    await subscriptionRepo.save(id, {
+      plan: plano,
+      priceCents,
+      paidUntil: dia === '' ? null : paidUntilInstant(dia, company.timezone),
+    })
+    return mostrar(c, await props({ editingId: id }))
+  })
+
+  painel.post('/saloes/:id/situacao', async (c) => {
+    const id = c.req.param('id')
+    if (!(await companyRepo.findById(id))) return c.notFound()
+
+    const body = await c.req.parseBody()
+    await companyRepo.setStatus(id, body.situacao === 'suspenso' ? 'suspended' : 'active')
+    return mostrar(c, await props({ editingId: id }))
   })
 
   painel.post('/saloes/:id', async (c) => {

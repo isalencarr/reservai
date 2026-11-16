@@ -1,13 +1,19 @@
 import type { FC } from 'hono/jsx'
-import type { Company } from '../../../db/schema.ts'
+import type { Company, Subscription } from '../../../db/schema.ts'
+import { formatPrice } from '../../../domain/money.ts'
+import { paidUntilDate, paymentState } from '../../../domain/subscription.ts'
+import { formatDayMonth } from '../../../domain/time.ts'
 import { FUSO_PADRAO } from '../../../platform/saloes.ts'
 import { STAFF_PREFIX } from '../../tenant.ts'
 import { Icon } from '../../views/icon.tsx'
 
+export type SalaoRow = { company: Company; subscription?: Subscription }
+
 export type SaloesProps = {
-  items: Company[]
-  editing?: Company
+  items: SalaoRow[]
+  editing?: SalaoRow
   error?: string
+  now: Date
 }
 
 /** Os fusos do Brasil. Digitar à mão é como nasce um salão com horário trocado
@@ -26,6 +32,26 @@ const FUSOS = [
   'America/Rio_Branco',
   'America/Noronha',
 ]
+
+const PLANOS: Subscription['plan'][] = ['mensal', 'anual']
+
+/** O que a lista precisa dizer de cada salão em uma linha: se está no ar e se
+ * está pago. */
+function situacao({ company, subscription }: SalaoRow, now: Date): string {
+  const pago = paymentState(subscription?.paidUntil, now)
+  const prazo = subscription?.paidUntil
+    ? formatDayMonth(paidUntilDate(subscription.paidUntil, company.timezone))
+    : undefined
+
+  const cobranca =
+    pago === 'em-dia'
+      ? `pago até ${prazo}`
+      : pago === 'vencido'
+        ? `vencido em ${prazo}`
+        : 'sem pagamento'
+
+  return company.status === 'suspended' ? `suspenso · ${cobranca}` : cobranca
+}
 
 const Campos: FC<{ company?: Company }> = ({ company }) => (
   <div class="fields">
@@ -71,20 +97,89 @@ const Campos: FC<{ company?: Company }> = ({ company }) => (
   </div>
 )
 
+/** Assinatura e situação são formulários separados do de identidade: salvar o
+ * pagamento não deve depender de o endereço estar preenchido certo. */
+const BlocoAssinatura: FC<{ row: SalaoRow }> = ({ row }) => {
+  const { company, subscription } = row
+  const prazo = subscription?.paidUntil
+    ? paidUntilDate(subscription.paidUntil, company.timezone)
+    : undefined
+
+  return (
+    <form class="service-form" hx-post={`/saloes/${company.id}/assinatura`}>
+      <fieldset class="team">
+        <legend>Assinatura</legend>
+        <label>
+          Plano
+          <select name="plano">
+            {PLANOS.map((plano) => (
+              <option
+                key={plano}
+                value={plano}
+                selected={(subscription?.plan ?? 'mensal') === plano}
+              >
+                {plano}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Valor
+          <input
+            type="text"
+            name="valor"
+            placeholder="149,00"
+            inputmode="decimal"
+            value={formatPrice(subscription?.priceCents ?? null)}
+          />
+        </label>
+        <label>
+          Pago até
+          <input type="date" name="pago_ate" value={prazo ?? ''} />
+        </label>
+      </fieldset>
+      <div class="actions">
+        <button type="submit" class="btn tonal">
+          Salvar assinatura
+        </button>
+      </div>
+    </form>
+  )
+}
+
+const BlocoSituacao: FC<{ row: SalaoRow }> = ({ row: { company } }) => {
+  const suspenso = company.status === 'suspended'
+  return (
+    <form class="service-form" hx-post={`/saloes/${company.id}/situacao`}>
+      <input type="hidden" name="situacao" value={suspenso ? 'ativo' : 'suspenso'} />
+      <p class="muted">
+        {suspenso
+          ? 'Suspenso: o cliente não marca horário novo, o que já está confirmado segue valendo e a equipe continua entrando.'
+          : 'Suspender bloqueia pedido novo do cliente. Agenda confirmada e acesso da equipe continuam.'}
+      </p>
+      <div class="actions">
+        <button type="submit" class={suspenso ? 'btn filled' : 'btn danger'}>
+          {suspenso ? 'Reativar' : 'Suspender'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 /** O modal é só marcação: abrir e fechar são navegações do HTMX sobre o mesmo
  * fragmento, então não existe estado de tela para sincronizar. */
-const Editar: FC<{ company: Company; error?: string }> = ({ company, error }) => (
+const Editar: FC<{ row: SalaoRow; error?: string }> = ({ row, error }) => (
   <div class="overlay">
     <button type="button" class="overlay-bg" hx-get="/" aria-label="Fechar" />
-    <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${company.name}`}>
-      <form class="service-form" hx-post={`/saloes/${company.id}`}>
-        <strong>{company.name}</strong>
+    <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${row.company.name}`}>
+      <form class="service-form" hx-post={`/saloes/${row.company.id}`}>
+        <strong>{row.company.name}</strong>
         {error ? <p class="error">{error}</p> : null}
-        <Campos company={company} />
+        <Campos company={row.company} />
         <p class="muted">
-          Cliente em {company.host}, equipe em {STAFF_PREFIX}
-          {company.host}. Mudar o endereço muda onde o salão atende: quem tiver o link antigo não
-          acha mais.
+          Cliente em {row.company.host}, equipe em {STAFF_PREFIX}
+          {row.company.host}. Mudar o endereço muda onde o salão atende: quem tiver o link antigo
+          não acha mais.
         </p>
         <div class="actions">
           <button type="submit" class="btn filled">
@@ -95,11 +190,14 @@ const Editar: FC<{ company: Company; error?: string }> = ({ company, error }) =>
           </button>
         </div>
       </form>
+
+      <BlocoAssinatura row={row} />
+      <BlocoSituacao row={row} />
     </div>
   </div>
 )
 
-export const Saloes: FC<SaloesProps> = ({ items, editing, error }) => (
+export const Saloes: FC<SaloesProps> = ({ items, editing, error, now }) => (
   <section id="saloes" hx-target="#saloes" hx-swap="outerHTML">
     <h2>Salões</h2>
 
@@ -135,17 +233,20 @@ export const Saloes: FC<SaloesProps> = ({ items, editing, error }) => (
           <p class="muted">Nenhum salão ainda.</p>
         ) : (
           <ul>
-            {items.map((company) => (
-              <li key={company.id}>
+            {items.map((row) => (
+              <li key={row.company.id} class={row.company.status === 'suspended' ? 'off' : ''}>
                 <span>
-                  {company.name}
-                  <small class="muted"> · {company.host}</small>
+                  {row.company.name}
+                  <small class="muted">
+                    {' · '}
+                    {row.company.host} · {situacao(row, now)}
+                  </small>
                 </span>
                 <button
                   type="button"
                   class="link"
-                  hx-get={`/?editar=${company.id}`}
-                  aria-label={`Editar ${company.name}`}
+                  hx-get={`/?editar=${row.company.id}`}
+                  aria-label={`Editar ${row.company.name}`}
                 >
                   editar
                 </button>
@@ -156,6 +257,6 @@ export const Saloes: FC<SaloesProps> = ({ items, editing, error }) => (
       </aside>
     </div>
 
-    {editing ? <Editar company={editing} error={error} /> : null}
+    {editing ? <Editar row={editing} error={error} /> : null}
   </section>
 )

@@ -156,7 +156,10 @@ recebe o link na hora.
     lista e o tom (claro, escuro ou automático) em `/equipe/aparencia`; a paleta
     inteira é gerada pelo algoritmo oficial do Google.
 
-15. Quem administra a plataforma entra por um host próprio e está em
+15. Salão suspenso não recebe pedido novo, mas continua mostrando e deixando
+    cancelar o que já estava marcado, e a equipe continua entrando. A assinatura
+    é conferida na mão pelo backoffice; nada suspende sozinho.
+16. Quem administra a plataforma entra por um host próprio e está em
     `platform_admins`, lista criada na migração a partir do ambiente. Não existe
     cadastro aberto nessa porta, e a sessão de lá não abre a área de nenhum
     salão.

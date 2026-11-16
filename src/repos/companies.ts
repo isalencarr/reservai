@@ -16,6 +16,7 @@ export interface CompanyRepo {
   findById(id: string): Promise<Company | undefined>
   listAll(): Promise<Company[]>
   update(id: string, input: CompanyInput): Promise<Company | undefined>
+  setStatus(id: string, status: Company['status']): Promise<Company | undefined>
   updateTheme(id: string, seed: string, mode: Company['themeMode']): Promise<void>
 }
 
@@ -39,6 +40,17 @@ export function createCompanyRepo(db: Db): CompanyRepo {
 
     async update(id, input) {
       const [row] = await db.update(companies).set(input).where(eq(companies.id, id)).returning()
+      return row
+    },
+
+    /** A data de suspensão fica guardada para o backoffice dizer desde quando;
+     * reativar limpa, senão a tela mostraria uma suspensão que já acabou. */
+    async setStatus(id, status) {
+      const [row] = await db
+        .update(companies)
+        .set({ status, suspendedAt: status === 'suspended' ? new Date() : null })
+        .where(eq(companies.id, id))
+        .returning()
       return row
     },
 

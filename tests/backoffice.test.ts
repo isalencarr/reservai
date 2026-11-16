@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { authEvents, companies } from '../src/db/schema.ts'
+import { authEvents, companies, subscriptions } from '../src/db/schema.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
 import { createPlatformAdminRepo } from '../src/repos/platform-admins.ts'
 import { createApp } from '../src/web/app.tsx'
@@ -212,5 +212,120 @@ describe('salões pelo backoffice', () => {
       fuso: 'America/Sao_Paulo',
     })
     expect(res.status).toBe(404)
+  })
+})
+
+describe('assinatura e suspensão', () => {
+  async function logado() {
+    const s = await setup()
+    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
+    const enviar = (path: string, campos: Record<string, string>) =>
+      s.app.request(path, {
+        method: 'POST',
+        headers: { ...FORM, host: HOST, cookie },
+        body: new URLSearchParams(campos),
+      })
+    return { ...s, cookie, enviar }
+  }
+
+  const futuro = () => {
+    const d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    return d.toISOString().slice(0, 10)
+  }
+
+  it('salão criado aqui nasce sem pagamento registrado', async () => {
+    const s = await logado()
+    await s.enviar('/saloes', {
+      nome: 'Salão da Inês',
+      host: 'ines.com.br',
+      slug: '',
+      fuso: 'America/Sao_Paulo',
+      dono: 'Inês Prado',
+      email: 'ines@ines.com.br',
+      telefone: '11955552222',
+    })
+
+    const res = await s.app.request('/', { headers: { host: HOST, cookie: s.cookie } })
+    expect(await res.text()).toContain('sem pagamento')
+  })
+
+  it('marca o pagamento e a lista passa a dizer até quando', async () => {
+    const s = await logado()
+    const res = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+      plano: 'anual',
+      valor: '149,00',
+      pago_ate: futuro(),
+    })
+
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('pago até')
+
+    const [assinatura] = await s.db.select().from(subscriptions)
+    expect(assinatura).toMatchObject({ plan: 'anual', priceCents: 14900 })
+
+    // O prazo é guardado como a virada do dia; a tela tem de mostrar o dia pago,
+    // não o seguinte.
+    const dia = futuro()
+    await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+      plano: 'mensal',
+      valor: '149,00',
+      pago_ate: dia,
+    })
+    const tela = await s.app.request('/', { headers: { host: HOST, cookie: s.cookie } })
+    const [, mes, diaDoMes] = dia.split('-')
+    expect(await tela.text()).toContain(`pago até ${diaDoMes}/${mes}`)
+  })
+
+  it('recusa valor e data inválidos sem gravar', async () => {
+    const s = await logado()
+
+    const valor = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+      plano: 'mensal',
+      valor: 'muito',
+      pago_ate: futuro(),
+    })
+    expect(valor.status).toBe(422)
+    expect(await valor.text()).toContain('Valor inválido')
+
+    const data = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+      plano: 'mensal',
+      valor: '149,00',
+      pago_ate: '30/12/2026',
+    })
+    expect(data.status).toBe(422)
+    expect(await data.text()).toContain('Data de pagamento inválida')
+
+    expect(await s.db.select().from(subscriptions)).toHaveLength(0)
+  })
+
+  it('suspende e reativa o salão', async () => {
+    const s = await logado()
+
+    const suspendeu = await s.enviar(`/saloes/${s.belezaPura.id}/situacao`, {
+      situacao: 'suspenso',
+    })
+    expect(suspendeu.status).toBe(200)
+    expect(await suspendeu.text()).toContain('suspenso')
+
+    const [depois] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
+    expect(depois?.status).toBe('suspended')
+    expect(depois?.suspendedAt).toBeInstanceOf(Date)
+
+    await s.enviar(`/saloes/${s.belezaPura.id}/situacao`, { situacao: 'ativo' })
+    const [reativado] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
+    expect(reativado).toMatchObject({ status: 'active', suspendedAt: null })
+  })
+
+  it('não deixa suspender sem sessão', async () => {
+    const s = await setup()
+    const res = await s.app.request(`/saloes/${s.belezaPura.id}/situacao`, {
+      method: 'POST',
+      headers: { ...FORM, host: HOST },
+      body: new URLSearchParams({ situacao: 'suspenso' }),
+    })
+
+    expect(res.status).toBe(303)
+    const [company] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
+    expect(company?.status).toBe('active')
   })
 })

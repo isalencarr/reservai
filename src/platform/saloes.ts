@@ -6,6 +6,7 @@ import { slugify } from '../domain/slug.ts'
 import { isTimeZone } from '../domain/time.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
 import { createProviderRepo } from '../repos/providers.ts'
+import { createSubscriptionRepo } from '../repos/subscriptions.ts'
 import { backofficeHost } from '../web/backoffice/host.ts'
 import { normalizeHost, STAFF_PREFIX } from '../web/tenant.ts'
 
@@ -89,6 +90,14 @@ export async function criarSalao(
 
   const [company] = await db.insert(companies).values(dados).returning()
   if (!company) return { erro: 'Não foi possível criar o salão.' }
+
+  // A assinatura nasce junto e sem pagamento registrado: salão novo entra na
+  // lista como pendente de cobrança, que não é o mesmo que vencido.
+  await createSubscriptionRepo(db).save(company.id, {
+    plan: 'mensal',
+    priceCents: null,
+    paidUntil: null,
+  })
 
   return { company, owner: await criarDono(db, company.id, { name: dono, email, phone }) }
 }

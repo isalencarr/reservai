@@ -21,6 +21,7 @@ import { servicosRoutes } from './routes/servicos.tsx'
 import { staffOf } from './staff.ts'
 import { requireArea, type TenantEnv, tenantMiddleware } from './tenant.ts'
 import { Icon } from './views/icon.tsx'
+import { Indisponivel } from './views/indisponivel.tsx'
 import { Layout } from './views/layout.tsx'
 
 const ASSETS: Record<string, { path: string; type: string }> = {
@@ -74,6 +75,16 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
       const staff = await staffOf(deps.auth, createProviderRepo(db), c as never)
       return c.redirect(staff ? '/equipe' : '/equipe/entrar', 303)
     }
+    // Suspenso: a porta do cliente explica em vez de oferecer um agendamento
+    // que a próxima tela recusaria.
+    if (company.status === 'suspended') {
+      return c.html(
+        <Layout title="Início" company={company}>
+          <Indisponivel />
+        </Layout>,
+      )
+    }
+
     return c.html(
       <Layout title="Início" company={company}>
         <h2>Bem-vindo</h2>

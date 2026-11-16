@@ -3,6 +3,21 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 1.3 — Assinatura e suspensão — 2026-11-15
+
+- Cada salão tem uma assinatura: plano (mensal ou anual), valor e até quando
+  está pago. Tudo conferido na mão, sem cobrança automática.
+- A lista de salões diz a situação de cada um: "pago até", "vencido em" ou "sem
+  pagamento". Salão novo nasce sem pagamento registrado, que é diferente de
+  vencido.
+- Dá para suspender e reativar um salão. Nada suspende sozinho: você olha os
+  vencidos e decide.
+- Salão suspenso não recebe pedido novo. A porta do cliente avisa que a agenda
+  está fechada e oferece "Meus horários"; o que já estava marcado continua
+  valendo e pode ser cancelado pelo cliente.
+- A equipe do salão suspenso continua entrando, com um aviso no topo de toda
+  tela interna. É por lá que ela vê a agenda e resolve o pagamento.
+
 ## 1.2 — Salões pelo backoffice — 2026-11-15
 
 - Dá para criar salão pela web: nome, endereço, apelido, fuso e o primeiro dono,
