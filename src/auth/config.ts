@@ -7,6 +7,7 @@ import type { Notifier } from '../notify/notifier.ts'
 import { createAuthEventRepo } from '../repos/auth-events.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
 import { createProviderRepo } from '../repos/providers.ts'
+import { backofficeHost, isBackofficeHost } from '../web/backoffice/host.ts'
 import { resolveTenant } from '../web/tenant.ts'
 
 /** O link precisa ser curto de validade: ele é a senha de quem o recebe. */
@@ -25,7 +26,12 @@ export function authSecret(): string {
  * aos endereços de equipe.
  */
 function allowedHosts(): string[] {
-  return (process.env.AUTH_ALLOWED_HOSTS ?? 'equipe.*').split(',').map((h) => h.trim())
+  // O host chega com a porta em desenvolvimento e a comparação da biblioteca é
+  // literal, então o backoffice entra nas duas formas. `equipe.*` já engole a
+  // porta pelo curinga.
+  const back = backofficeHost()
+  const padrao = `equipe.*,${back},${back}:*`
+  return (process.env.AUTH_ALLOWED_HOSTS ?? padrao).split(',').map((h) => h.trim())
 }
 
 export type Auth = ReturnType<typeof createAuth>
@@ -67,6 +73,9 @@ export function createAuth(db: Db, notifier: Notifier) {
               email: person?.email,
               ip: created.ipAddress ?? '',
               userAgent: created.userAgent,
+              // Entrada sem salão é a da plataforma; fica dito para o registro
+              // não parecer um login órfão.
+              reason: isBackofficeHost(host) ? 'backoffice' : undefined,
             })
 
             // Primeiro acesso fecha o convite: a pessoa deixa de ser pendente.

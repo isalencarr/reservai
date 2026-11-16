@@ -309,3 +309,23 @@ export const authEvents = sqliteTable(
 )
 
 export type AuthEvent = typeof authEvents.$inferSelect
+
+/* --------------------------------------------------------------------------
+ * Plataforma: o que existe acima dos salões.
+ * ----------------------------------------------------------------------- */
+
+/**
+ * Quem pode abrir o backoffice. Tabela própria em vez de uma coluna em `users`
+ * porque a permissão tem de existir antes do primeiro login: a linha é criada
+ * na migração, a partir do ambiente, e não por quem conseguir entrar.
+ */
+export const platformAdmins = sqliteTable('platform_admins', {
+  id: id(),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at')
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export type PlatformAdmin = typeof platformAdmins.$inferSelect

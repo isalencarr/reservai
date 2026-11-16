@@ -8,6 +8,8 @@ import type { Notifier } from '../notify/notifier.ts'
 import { createAuthEventRepo } from '../repos/auth-events.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
 import { createProviderRepo } from '../repos/providers.ts'
+import { backofficeApp } from './backoffice/app.tsx'
+import { isBackofficeHost } from './backoffice/host.ts'
 import { agendaRoutes } from './routes/agenda.tsx'
 import { clientesRoutes } from './routes/clientes.tsx'
 import { entrarRoutes } from './routes/entrar.tsx'
@@ -40,6 +42,17 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
     const asset = ASSETS[c.req.param('file')]
     if (!asset) return c.notFound()
     return new Response(Bun.file(asset.path), { headers: { 'content-type': asset.type } })
+  })
+
+  /**
+   * O backoffice responde num host próprio e sai do caminho aqui: ele não tem
+   * salão, então nada do app do salão pode rodar antes dele. Host desconhecido
+   * continua morrendo no `tenantMiddleware`.
+   */
+  const backoffice = backofficeApp(deps)
+  app.use('*', async (c, next) => {
+    if (!isBackofficeHost(c.req.header('host') ?? '')) return next()
+    return backoffice.fetch(c.req.raw)
   })
 
   app.use('*', tenantMiddleware(createCompanyRepo(db)))

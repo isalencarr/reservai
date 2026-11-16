@@ -26,28 +26,34 @@ export function upcomingWeekday(weekday: number, timeZone: string, minDaysAhead 
   return date
 }
 
-/** Faz o login de equipe pelo caminho real: pede o link, lê o endereço que
- * chegou ao notificador e visita, como a pessoa faria no e-mail. */
-export async function staffLogin(
-  app: { request: (path: string, init?: RequestInit) => Promise<Response> | Response },
+type RequestLike = { request: (path: string, init?: RequestInit) => Promise<Response> | Response }
+
+/** Faz o login por link no e-mail pelo caminho real: pede o link, lê o endereço
+ * que chegou ao notificador e visita, como a pessoa faria no e-mail. */
+export async function magicLogin(
+  app: RequestLike,
   notifier: LogNotifier,
   host: string,
   email: string,
+  path: string,
 ): Promise<string> {
-  await app.request('/equipe/entrar', {
+  await app.request(path, {
     method: 'POST',
     headers: { host, 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ email }),
   })
 
   const sent = notifier.sent.at(-1)
-  if (sent?.kind !== 'magic-link') throw new Error(`link da equipe não foi enviado para ${email}`)
+  if (sent?.kind !== 'magic-link') throw new Error(`link não foi enviado para ${email}`)
 
   const res = await app.request(sent.url, { headers: { host } })
   const cookie = res.headers
     .getSetCookie()
     .map((c) => c.split(';')[0])
     .join('; ')
-  if (!cookie) throw new Error('sessão da equipe não foi criada')
+  if (!cookie) throw new Error(`sessão não foi criada para ${email}`)
   return cookie
 }
+
+export const staffLogin = (app: RequestLike, notifier: LogNotifier, host: string, email: string) =>
+  magicLogin(app, notifier, host, email, '/equipe/entrar')

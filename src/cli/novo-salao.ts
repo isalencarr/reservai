@@ -6,6 +6,7 @@ import { formatPhone, normalizePhone } from '../domain/phone.ts'
 import { slugify } from '../domain/slug.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
 import { createProviderRepo } from '../repos/providers.ts'
+import { backofficeHost } from '../web/backoffice/host.ts'
 import { normalizeHost, STAFF_PREFIX } from '../web/tenant.ts'
 
 export type NovoSalao = {
@@ -39,6 +40,11 @@ export async function criarSalao(database: ReturnType<typeof createDb>, input: N
     )
   }
   if (!slug) throw new Error('o nome não gerou um endereço curto válido; use --slug')
+  // Salão no host do backoffice nasceria inalcançável: o backoffice responde
+  // primeiro e o salão nunca apareceria para ninguém.
+  if (host === backofficeHost()) {
+    throw new Error(`${host} é o endereço do backoffice; use outro --host`)
+  }
   if (!input.dono.trim()) throw new Error('informe --dono')
   if (!phone) throw new Error('telefone inválido; use DDD e número, como 11988880001')
   if (!email) throw new Error('e-mail inválido; é por ele que o dono entra')

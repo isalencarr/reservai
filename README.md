@@ -9,6 +9,10 @@ vive isolado dos outros. São dois endereços por salão:
 Cada endereço serve só a sua área: rota de equipe no endereço do cliente responde
 404, e o contrário também.
 
+Fora dos salões existe um terceiro endereço, o do backoffice, onde quem
+administra a plataforma vê e configura os clientes. Cada entrega está no
+[CHANGELOG.md](CHANGELOG.md).
+
 ## Rodar
 
 ```sh
@@ -20,6 +24,21 @@ bun run dev        # http://beleza-pura.localhost:3000
 Salões de exemplo: `beleza-pura.localhost:3000` e `studio-norte.localhost:3000`,
 com a equipe em `equipe.beleza-pura.localhost:3000`. O dono de exemplo é a Carla,
 e-mail `carla@belezapura.com.br`; o link de acesso sai no terminal do servidor.
+
+### Backoffice
+
+```sh
+export BACKOFFICE_HOST=backoffice.localhost
+export PLATFORM_OWNER_EMAIL=voce@exemplo.com
+export PLATFORM_OWNER_NAME="Seu nome"
+bun run db:migrate   # garante o seu acesso ao backoffice
+bun run dev          # http://backoffice.localhost:3000
+```
+
+O e-mail do dono da plataforma vem do ambiente, não do repositório: ele é a
+chave de tudo, e num sistema só de link por e-mail quem controla aquela caixa
+controla a plataforma. Sem `PLATFORM_OWNER_EMAIL`, o app sobe e o backoffice
+fica sem ninguém que consiga entrar.
 
 ### Criar um salão de verdade
 
@@ -74,27 +93,31 @@ HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
 - `src/db/` — schema Drizzle, migrations e conexão. Trocar de banco mexe só em `client.ts` e no schema.
 - `src/repos/` — acesso ao banco atrás de uma interface por entidade.
 - `src/web/` — servidor Hono, resolução do salão pelo domínio, rotas e telas (HTMX).
+- `src/web/backoffice/` — o app da plataforma. Host próprio, sem salão no
+  contexto: nenhuma rota daqui enxerga `company`.
 - `src/notify/` — mensagens fora da tela. Hoje só a versão em log; o canal real
   (WhatsApp ou SMS) entra quando houver salão piloto.
 - `src/jobs/` — rotinas que também rodam fora da web, como a expiração de pedidos.
 
 ## Telas
 
-| Rota                    | Endereço | Quem acessa                                |
-| ----------------------- | -------- | ------------------------------------------ |
-| `/`                     | cliente  | qualquer pessoa                            |
-| `/entrar`               | cliente  | nome, telefone e código                    |
-| `/reserva`              | cliente  | pedido em passos                           |
-| `/reserva/meus`         | cliente  | seus horários e cancelamento               |
-| `/equipe/entrar`        | equipe   | e-mail e link de acesso                    |
-| `/equipe`               | equipe   | agendas do salão; prestador cai na própria |
-| `/equipe/pessoas`       | equipe   | só o dono: convidar, editar e desativar    |
-| `/equipe/acessos`       | equipe   | só o dono: entradas, saídas e recusas      |
-| `/agenda/:prestador`    | equipe   | o próprio prestador ou o dono              |
-| `/pendentes/:prestador` | equipe   | o próprio prestador ou o dono              |
-| `/horarios`             | equipe   | conferência da disponibilidade             |
-| `/servicos`             | equipe   | só o dono                                  |
-| `/clientes`             | equipe   | só o dono                                  |
+| Rota                    | Endereço   | Quem acessa                                |
+| ----------------------- | ---------- | ------------------------------------------ |
+| `/`                     | cliente    | qualquer pessoa                            |
+| `/entrar`               | cliente    | nome, telefone e código                    |
+| `/reserva`              | cliente    | pedido em passos                           |
+| `/reserva/meus`         | cliente    | seus horários e cancelamento               |
+| `/equipe/entrar`        | equipe     | e-mail e link de acesso                    |
+| `/equipe`               | equipe     | agendas do salão; prestador cai na própria |
+| `/equipe/pessoas`       | equipe     | só o dono: convidar, editar e desativar    |
+| `/equipe/acessos`       | equipe     | só o dono: entradas, saídas e recusas      |
+| `/agenda/:prestador`    | equipe     | o próprio prestador ou o dono              |
+| `/pendentes/:prestador` | equipe     | o próprio prestador ou o dono              |
+| `/horarios`             | equipe     | conferência da disponibilidade             |
+| `/servicos`             | equipe     | só o dono                                  |
+| `/clientes`             | equipe     | só o dono                                  |
+| `/entrar`               | backoffice | e-mail da plataforma e link de acesso      |
+| `/`                     | backoffice | lista dos salões em operação               |
 
 A equipe entra por e-mail: pede um link em `/equipe/entrar` e o link chega pelo
 notificador. Em desenvolvimento ele aparece no terminal do servidor, com o
@@ -128,6 +151,11 @@ recebe o link na hora.
 14. A interface segue o Material 3 (Material You). O salão escolhe uma cor da
     lista e o tom (claro, escuro ou automático) em `/equipe/aparencia`; a paleta
     inteira é gerada pelo algoritmo oficial do Google.
+
+15. Quem administra a plataforma entra por um host próprio e está em
+    `platform_admins`, lista criada na migração a partir do ambiente. Não existe
+    cadastro aberto nessa porta, e a sessão de lá não abre a área de nenhum
+    salão.
 
 ### Uma regra de lint desligada
 
