@@ -541,6 +541,19 @@ input[type="checkbox"] {
 
 /* --- menu da área da equipe --- */
 
+/* Em tela estreita o menu continua uma tira acima do conteúdo; a coluna só
+   aparece quando sobra largura, na regra de 1000px lá embaixo. */
+.shell {
+  display: grid;
+}
+
+.shell main {
+  min-width: 0;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 56px;
+}
+
 .menu {
   background: var(--md-surface-container);
   overflow-x: auto;
@@ -1116,6 +1129,50 @@ header.app .wrap .signout {
 
   .week .ranges {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (min-width: 1000px) {
+  /* O cabeçalho acompanha a largura do conteúdo, senão o nome do salão fica
+     deslocado da coluna do menu. */
+  header.app .wrap {
+    max-width: 1180px;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    gap: 28px;
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+
+  /* 68px é a altura do cabeçalho fixo: o menu acompanha a rolagem logo abaixo. */
+  .shell .menu {
+    position: sticky;
+    top: 68px;
+    align-self: start;
+    padding-top: 20px;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .shell .menu-items {
+    display: grid;
+    gap: 4px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+  }
+
+  .shell .menu-link {
+    padding: 12px 16px;
+  }
+
+  .shell main {
+    max-width: none;
+    margin: 0;
+    padding: 0 0 56px;
   }
 }
 

@@ -18,6 +18,9 @@ usa — a lista de arquivos está no histórico do git.
   e gravar a nova, que deixaria a agenda sem oferecer nada.
 - A pendência "sem horário de trabalho" agora leva para essa tela, e o acesso de
   suporte vê a jornada sem poder mudar.
+- Com a tela nova o menu chegou a dez itens, e em tira horizontal metade ficava
+  fora da vista. Em tela larga ele virou uma coluna à esquerda, que acompanha a
+  rolagem; no celular continua a tira acima do conteúdo.
 
 ## 2.2 — Guia do dono — 2026-11-15
 

@@ -140,6 +140,10 @@ export const StaffLayout: FC<Props> = ({
               </button>
             </form>
           </div>
+        </header>
+        {/* O menu sai do cabeçalho e vira coluna: são dez telas, e em tira
+          horizontal metade delas fica fora da vista. */}
+        <div class="shell">
           <nav class="menu">
             <div class="menu-items">
               {items(staff, support !== undefined).map((item) => (
@@ -155,37 +159,37 @@ export const StaffLayout: FC<Props> = ({
               ))}
             </div>
           </nav>
-        </header>
-        <main class="wrap">
-          {/* O aviso sai do próprio salão, então toda tela interna o mostra sem
+          <main>
+            {/* O aviso sai do próprio salão, então toda tela interna o mostra sem
             cada rota precisar lembrar de passar. */}
-          {/* O aviso é do dono, que é quem resolve, e conta só o que impede o
+            {/* O aviso é do dono, que é quem resolve, e conta só o que impede o
             cliente de marcar: convite não aceito não vira tarja permanente. */}
-          {staff.role === 'owner' && active !== 'guia' && bloqueios > 0 ? (
-            <p class="notice">
-              <Icon name="help" />
-              <span>
-                Falta configurar {bloqueios} {bloqueios === 1 ? 'coisa' : 'coisas'} antes de
-                divulgar o endereço.
-              </span>
-              <a href="/equipe/guia">Ver no guia</a>
-            </p>
-          ) : null}
-          {support ? (
-            <p class="notice">
-              Acesso de suporte a {company.name}: você vê o salão como o dono vê, sem a carteira de
-              clientes nem os dados da equipe, e sem poder alterar nada. Vence às{' '}
-              {formatTime(support.expiresAt, company.timezone)}.
-            </p>
-          ) : null}
-          {company.status === 'suspended' ? (
-            <p class="error">
-              Salão suspenso: o cliente não consegue marcar horário novo. O que já está confirmado
-              segue na agenda.
-            </p>
-          ) : null}
-          {children}
-        </main>
+            {staff.role === 'owner' && active !== 'guia' && bloqueios > 0 ? (
+              <p class="notice">
+                <Icon name="help" />
+                <span>
+                  Falta configurar {bloqueios} {bloqueios === 1 ? 'coisa' : 'coisas'} antes de
+                  divulgar o endereço.
+                </span>
+                <a href="/equipe/guia">Ver no guia</a>
+              </p>
+            ) : null}
+            {support ? (
+              <p class="notice">
+                Acesso de suporte a {company.name}: você vê o salão como o dono vê, sem a carteira
+                de clientes nem os dados da equipe, e sem poder alterar nada. Vence às{' '}
+                {formatTime(support.expiresAt, company.timezone)}.
+              </p>
+            ) : null}
+            {company.status === 'suspended' ? (
+              <p class="error">
+                Salão suspenso: o cliente não consegue marcar horário novo. O que já está confirmado
+                segue na agenda.
+              </p>
+            ) : null}
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   )
