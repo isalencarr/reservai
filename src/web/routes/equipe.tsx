@@ -8,7 +8,14 @@ import { createAuthEventRepo } from '../../repos/auth-events.ts'
 import { createCompanyRepo } from '../../repos/companies.ts'
 import { createProviderRepo, type ProviderInput } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
-import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
+import {
+  denyOnSupport,
+  layoutProps,
+  requireOwner,
+  type StaffEnv,
+  staffMiddleware,
+  supportEntryOf,
+} from '../staff.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
 import { Acessos } from '../views/acessos.tsx'
 import { Aparencia } from '../views/aparencia.tsx'
@@ -44,8 +51,9 @@ export function equipeRoutes({ db, auth }: Deps) {
   app.get('/entrar', (c) => render(c, { next: safeNext(c.req.query('next')) }))
 
   /**
-   * O link só é emitido para e-mail que já está na equipe ativa deste salão:
-   * é isso que faz o acesso ser por convite, e não por cadastro aberto.
+   * O link só é emitido para e-mail que já está na equipe ativa deste salão —
+   * é isso que faz o acesso ser por convite, e não por cadastro aberto — ou
+   * para quem cuida da plataforma com janela de suporte aberta aqui.
    */
   app.post('/entrar', async (c) => {
     const company = c.get('company')
@@ -55,9 +63,10 @@ export function equipeRoutes({ db, auth }: Deps) {
     if (!email) return render(c, { next, error: 'E-mail inválido.' }, 422)
 
     const staff = await providerRepo.findByEmail(company.id, email)
-    if (staff?.active) {
+    const suporte = staff ? undefined : await supportEntryOf(db, company.id, email)
+    if (staff?.active || suporte) {
       await auth.api.signInMagicLink({
-        body: { email, callbackURL: next, name: staff.name },
+        body: { email, callbackURL: next, name: staff?.name ?? suporte?.name ?? email },
         headers: c.req.raw.headers,
       })
     } else {
@@ -76,7 +85,7 @@ export function equipeRoutes({ db, auth }: Deps) {
   })
 
   const painel = new Hono<StaffEnv>()
-  painel.use('*', staffMiddleware(auth, providerRepo))
+  painel.use('*', staffMiddleware(auth, db))
 
   painel.get('/', async (c) => {
     const company = c.get('company')
@@ -86,7 +95,7 @@ export function equipeRoutes({ db, auth }: Deps) {
     if (staff.role !== 'owner') return c.redirect(`/agenda/${staff.id}`, 303)
 
     return c.html(
-      <StaffLayout title="Agendas" company={company} staff={staff} active="agendas">
+      <StaffLayout title="Agendas" active="agendas" {...layoutProps(c)}>
         <Painel
           staff={staff}
           providers={await providerRepo.listByCompany(company.id)}
@@ -111,8 +120,9 @@ export function equipeRoutes({ db, auth }: Deps) {
 
   /** Cadastro da equipe é do dono: é por aqui que entra quem vai atender. */
   const pessoas = new Hono<StaffEnv>()
-  pessoas.use('*', staffMiddleware(auth, providerRepo))
+  pessoas.use('*', staffMiddleware(auth, db))
   pessoas.use('*', requireOwner())
+  pessoas.use('*', denyOnSupport())
 
   function readPessoa(body: Record<string, unknown>): ProviderInput | { error: string } {
     const name = typeof body.nome === 'string' ? body.nome.trim() : ''
@@ -161,7 +171,7 @@ export function equipeRoutes({ db, auth }: Deps) {
       c.req.header('HX-Request') ? (
         <Pessoas {...view} />
       ) : (
-        <StaffLayout title="Equipe" company={company} staff={c.get('staff')} active="pessoas">
+        <StaffLayout title="Equipe" active="pessoas" {...layoutProps(c)}>
           <Pessoas {...view} />
         </StaffLayout>
       ),
@@ -274,12 +284,13 @@ export function equipeRoutes({ db, auth }: Deps) {
 
   /** O registro é do salão, então fica com o dono. */
   const acessos = new Hono<StaffEnv>()
-  acessos.use('*', staffMiddleware(auth, providerRepo))
+  acessos.use('*', staffMiddleware(auth, db))
   acessos.use('*', requireOwner())
+  acessos.use('*', denyOnSupport())
   acessos.get('/', async (c) => {
     const company = c.get('company')
     return c.html(
-      <StaffLayout title="Acessos" company={company} staff={c.get('staff')} active="acessos">
+      <StaffLayout title="Acessos" active="acessos" {...layoutProps(c)}>
         <Acessos items={await eventRepo.listRecent(company.id)} timeZone={company.timezone} />
       </StaffLayout>,
     )
@@ -287,13 +298,13 @@ export function equipeRoutes({ db, auth }: Deps) {
 
   /** Aparência é identidade do salão: fica com o dono. */
   const aparencia = new Hono<StaffEnv>()
-  aparencia.use('*', staffMiddleware(auth, providerRepo))
+  aparencia.use('*', staffMiddleware(auth, db))
   aparencia.use('*', requireOwner())
 
   aparencia.get('/', (c) => {
     const company = c.get('company')
     return c.html(
-      <StaffLayout title="Aparência" company={company} staff={c.get('staff')} active="aparencia">
+      <StaffLayout title="Aparência" active="aparencia" {...layoutProps(c)}>
         <Aparencia company={company} />
       </StaffLayout>,
     )

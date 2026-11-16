@@ -3,11 +3,13 @@ import { normalizeEmail } from '../../domain/email.ts'
 import { parsePrice } from '../../domain/money.ts'
 import { clientIp } from '../../domain/privacy.ts'
 import { paidUntilInstant } from '../../domain/subscription.ts'
+import { formatWhen } from '../../domain/time.ts'
 import { criarSalao, editarSalao, type Identidade, type NovoSalao } from '../../platform/saloes.ts'
 import { createAuthEventRepo } from '../../repos/auth-events.ts'
 import { createCompanyRepo } from '../../repos/companies.ts'
 import { createPlatformAdminRepo } from '../../repos/platform-admins.ts'
 import { createSubscriptionRepo } from '../../repos/subscriptions.ts'
+import { createSupportSessionRepo } from '../../repos/support-sessions.ts'
 import type { Deps } from '../deps.ts'
 import { type PlatformEnv, platformAdminMiddleware } from './admin.ts'
 import { EntrarBackoffice, type EntrarProps } from './views/entrar.tsx'
@@ -48,6 +50,7 @@ export function backofficeApp({ db, auth }: Deps) {
   const adminRepo = createPlatformAdminRepo(db)
   const companyRepo = createCompanyRepo(db)
   const subscriptionRepo = createSubscriptionRepo(db)
+  const supportRepo = createSupportSessionRepo(db)
   const eventRepo = createAuthEventRepo(db)
   const app = new Hono<PlatformEnv>()
 
@@ -114,10 +117,13 @@ export function backofficeApp({ db, auth }: Deps) {
   painel.use('*', platformAdminMiddleware(auth, adminRepo))
 
   async function props(options: { error?: string; editingId?: string } = {}) {
+    const agora = new Date()
     const assinaturas = await subscriptionRepo.listAll()
+    const suportes = await supportRepo.listActive(agora)
     const items = (await companyRepo.listAll()).map((company) => ({
       company,
       subscription: assinaturas.find((a) => a.companyId === company.id),
+      support: suportes.find((s) => s.companyId === company.id),
     }))
     return {
       items,
@@ -184,6 +190,44 @@ export function backofficeApp({ db, auth }: Deps) {
     const body = await c.req.parseBody()
     await companyRepo.setStatus(id, body.situacao === 'suspenso' ? 'suspended' : 'active')
     return mostrar(c, await props({ editingId: id }))
+  })
+
+  /**
+   * Abrir suporte é entrar nos dados de um cliente, então fica registrado no
+   * log do próprio salão: o dono vê em `/equipe/acessos` quando e até quando.
+   */
+  painel.post('/saloes/:id/suporte', async (c) => {
+    const id = c.req.param('id')
+    const company = await companyRepo.findById(id)
+    if (!company) return c.notFound()
+
+    const admin = c.get('admin')
+    const sessao = await supportRepo.open(id, admin.email)
+    await eventRepo.record({
+      companyId: id,
+      type: 'support',
+      email: admin.email,
+      ip: clientIp(c.req.raw.headers),
+      userAgent: c.req.header('user-agent'),
+      reason: `acesso aberto até ${formatWhen(sessao.expiresAt, company.timezone)}`,
+    })
+    return mostrar(c, await props({ editingId: id }))
+  })
+
+  painel.post('/suporte/:id/encerrar', async (c) => {
+    const sessao = await supportRepo.findById(c.req.param('id'))
+    if (!sessao) return c.notFound()
+
+    await supportRepo.revoke(sessao.id)
+    await eventRepo.record({
+      companyId: sessao.companyId,
+      type: 'support',
+      email: sessao.adminEmail,
+      ip: clientIp(c.req.raw.headers),
+      userAgent: c.req.header('user-agent'),
+      reason: 'acesso encerrado',
+    })
+    return mostrar(c, await props({ editingId: sessao.companyId }))
   })
 
   painel.post('/saloes/:id', async (c) => {

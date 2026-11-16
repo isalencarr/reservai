@@ -1,13 +1,18 @@
 import type { FC } from 'hono/jsx'
-import type { Company, Subscription } from '../../../db/schema.ts'
+import type { Company, Subscription, SupportSession } from '../../../db/schema.ts'
 import { formatPrice } from '../../../domain/money.ts'
 import { paidUntilDate, paymentState } from '../../../domain/subscription.ts'
-import { formatDayMonth } from '../../../domain/time.ts'
+import { formatDayMonth, formatWhen } from '../../../domain/time.ts'
 import { FUSO_PADRAO } from '../../../platform/saloes.ts'
 import { STAFF_PREFIX } from '../../tenant.ts'
 import { Icon } from '../../views/icon.tsx'
 
-export type SalaoRow = { company: Company; subscription?: Subscription }
+export type SalaoRow = {
+  company: Company
+  subscription?: Subscription
+  /** Janela de suporte aberta agora, se houver. */
+  support?: SupportSession
+}
 
 export type SaloesProps = {
   items: SalaoRow[]
@@ -37,7 +42,7 @@ const PLANOS: Subscription['plan'][] = ['mensal', 'anual']
 
 /** O que a lista precisa dizer de cada salão em uma linha: se está no ar e se
  * está pago. */
-function situacao({ company, subscription }: SalaoRow, now: Date): string {
+function situacao({ company, subscription, support }: SalaoRow, now: Date): string {
   const pago = paymentState(subscription?.paidUntil, now)
   const prazo = subscription?.paidUntil
     ? formatDayMonth(paidUntilDate(subscription.paidUntil, company.timezone))
@@ -50,8 +55,44 @@ function situacao({ company, subscription }: SalaoRow, now: Date): string {
         ? `vencido em ${prazo}`
         : 'sem pagamento'
 
-  return company.status === 'suspended' ? `suspenso · ${cobranca}` : cobranca
+  const partes = [
+    company.status === 'suspended' ? 'suspenso' : undefined,
+    cobranca,
+    support ? 'suporte aberto' : undefined,
+  ]
+  return partes.filter(Boolean).join(' · ')
 }
+
+/** O suporte entra na área do salão, então o backoffice mostra a janela aberta
+ * em vez de deixar o acesso invisível de onde foi concedido. */
+const BlocoSuporte: FC<{ row: SalaoRow }> = ({ row: { company, support } }) =>
+  support ? (
+    <form class="service-form" hx-post={`/suporte/${support.id}/encerrar`}>
+      <p class="muted">
+        Suporte aberto até {formatWhen(support.expiresAt, company.timezone)}. Entre em{' '}
+        {STAFF_PREFIX}
+        {company.host} com o seu e-mail da plataforma: você vê a agenda, nunca a carteira de
+        clientes, e não altera nada.
+      </p>
+      <div class="actions">
+        <button type="submit" class="btn danger">
+          Encerrar suporte
+        </button>
+      </div>
+    </form>
+  ) : (
+    <form class="service-form" hx-post={`/saloes/${company.id}/suporte`}>
+      <p class="muted">
+        Abre uma janela de 2 horas para você olhar este salão. Fica registrado no log de acessos do
+        dono.
+      </p>
+      <div class="actions">
+        <button type="submit" class="btn tonal">
+          Abrir suporte
+        </button>
+      </div>
+    </form>
+  )
 
 const Campos: FC<{ company?: Company }> = ({ company }) => (
   <div class="fields">
@@ -193,6 +234,7 @@ const Editar: FC<{ row: SalaoRow; error?: string }> = ({ row, error }) => (
 
       <BlocoAssinatura row={row} />
       <BlocoSituacao row={row} />
+      <BlocoSuporte row={row} />
     </div>
   </div>
 )

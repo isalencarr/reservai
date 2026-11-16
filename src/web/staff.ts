@@ -1,11 +1,17 @@
 import type { Context, MiddlewareHandler } from 'hono'
 import type { Auth } from '../auth/config.ts'
-import type { Provider } from '../db/schema.ts'
-import type { ProviderRepo } from '../repos/providers.ts'
+import type { Db } from '../db/client.ts'
+import type { Provider, SupportSession } from '../db/schema.ts'
+import { createPlatformAdminRepo } from '../repos/platform-admins.ts'
+import { createProviderRepo } from '../repos/providers.ts'
+import { createSupportSessionRepo } from '../repos/support-sessions.ts'
 import type { TenantEnv } from './tenant.ts'
 
 export type StaffEnv = TenantEnv & {
-  Variables: TenantEnv['Variables'] & { staff: Provider }
+  Variables: TenantEnv['Variables'] & {
+    staff: Provider
+    support: SupportSession | undefined
+  }
 }
 
 /** Quem não está identificado vai para a porta da equipe; o HTMX precisa do
@@ -19,29 +25,76 @@ function redirectToLogin(c: Context<StaffEnv>) {
   return c.redirect(target, 303)
 }
 
+export type StaffAccess = { staff: Provider; support?: SupportSession }
+
 /**
- * A sessão é da biblioteca e vale para a pessoa; quem define o que ela pode
- * fazer é o cadastro da equipe naquele salão. Um e-mail com sessão válida que
- * não esteja na equipe deste domínio não entra.
+ * Quem é esta pessoa dentro deste salão. Primeiro a equipe: a sessão é da
+ * biblioteca e vale para a pessoa, mas quem define o que ela pode fazer é o
+ * cadastro em `providers` deste domínio. Depois o suporte: quem administra a
+ * plataforma, com uma janela aberta para este salão, entra vendo o que o dono
+ * vê — e só vendo.
  */
-export async function staffOf(
+export async function staffAccessOf(
   auth: Auth,
-  repo: ProviderRepo,
+  db: Db,
   c: Context<StaffEnv>,
-): Promise<Provider | undefined> {
+): Promise<StaffAccess | undefined> {
   const session = await auth.api.getSession({ headers: c.req.raw.headers })
   const email = session?.user.email
   if (!email) return undefined
 
-  const staff = await repo.findByEmail(c.get('company').id, email)
-  return staff?.active ? staff : undefined
+  const companyId = c.get('company').id
+  const providerRepo = createProviderRepo(db)
+
+  const staff = await providerRepo.findByEmail(companyId, email)
+  if (staff) return staff.active ? { staff } : undefined
+
+  const admin = await createPlatformAdminRepo(db).findByEmail(email)
+  if (!admin) return undefined
+
+  const support = await createSupportSessionRepo(db).activeFor(companyId, admin.email, new Date())
+  if (!support) return undefined
+
+  // Sem dono ativo não há o que ver: o suporte não inventa uma identidade que
+  // o salão não tem.
+  const owner = await providerRepo.findOwner(companyId)
+  return owner ? { staff: owner, support } : undefined
 }
 
-export function staffMiddleware(auth: Auth, repo: ProviderRepo): MiddlewareHandler<StaffEnv> {
+/** A única escrita que o suporte faz é sair. Trancar a porta de saída deixaria
+ * a janela aberta até vencer sozinha. */
+const SAIDA = '/equipe/sair'
+
+/**
+ * Quem administra a plataforma só recebe link na porta de um salão enquanto
+ * tiver janela de suporte aberta para ele: a janela é a autorização, e sem ela
+ * essa porta responde como se o e-mail fosse desconhecido.
+ */
+export async function supportEntryOf(
+  db: Db,
+  companyId: string,
+  email: string,
+  now = new Date(),
+): Promise<{ name: string; session: SupportSession } | undefined> {
+  const admin = await createPlatformAdminRepo(db).findByEmail(email)
+  if (!admin) return undefined
+
+  const session = await createSupportSessionRepo(db).activeFor(companyId, admin.email, now)
+  return session ? { name: admin.name, session } : undefined
+}
+
+export function staffMiddleware(auth: Auth, db: Db): MiddlewareHandler<StaffEnv> {
   return async (c, next) => {
-    const staff = await staffOf(auth, repo, c)
-    if (!staff) return redirectToLogin(c)
-    c.set('staff', staff)
+    const access = await staffAccessOf(auth, db, c)
+    if (!access) return redirectToLogin(c)
+    c.set('staff', access.staff)
+    c.set('support', access.support)
+
+    // Suporte é só leitura, e o bloqueio mora aqui: rota de escrita nova nasce
+    // protegida, em vez de depender de alguém lembrar de proteger.
+    if (access.support && c.req.method !== 'GET' && new URL(c.req.url).pathname !== SAIDA) {
+      return c.text('O acesso de suporte é só de leitura.', 403)
+    }
     await next()
   }
 }
@@ -56,7 +109,28 @@ export function requireOwner(): MiddlewareHandler<StaffEnv> {
   }
 }
 
+/** Telas que o suporte não abre: carteira de clientes, cadastro da equipe e
+ * registro de acessos são dados pessoais de quem não pediu suporte. */
+export function denyOnSupport(): MiddlewareHandler<StaffEnv> {
+  return async (c, next) => {
+    if (c.get('support')) {
+      return c.text('Dados pessoais não aparecem no acesso de suporte.', 403)
+    }
+    await next()
+  }
+}
+
 /** O prestador mexe na própria agenda; o dono mexe na de qualquer um. */
 export function canManage(staff: Provider, providerId: string): boolean {
   return staff.role === 'owner' || staff.id === providerId
+}
+
+/** Props comuns de toda tela interna, montadas do contexto: um aviso novo no
+ * layout não precisa ser passado em nove rotas. */
+export function layoutProps(c: Context<StaffEnv>) {
+  return {
+    company: c.get('company'),
+    staff: c.get('staff'),
+    support: c.get('support'),
+  }
 }

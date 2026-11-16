@@ -4,7 +4,7 @@ import { addDays, formatWhen, type LocalDate, localDate, toUtc } from '../../dom
 import { createAppointmentRepo, type DayEntry } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
-import { canManage, type StaffEnv, staffMiddleware } from '../staff.ts'
+import { canManage, layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { DayView, type DayViewProps } from '../views/agenda.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -26,7 +26,7 @@ export function agendaRoutes({ db, notifier, auth }: Deps) {
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(auth, providerRepo))
+  app.use('*', staffMiddleware(auth, db))
 
   async function dayView(
     companyId: string,
@@ -63,9 +63,8 @@ export function agendaRoutes({ db, notifier, auth }: Deps) {
       : c.html(
           <StaffLayout
             title={`Agenda de ${props.providerName}`}
-            company={c.get('company')}
-            staff={c.get('staff')}
             active="agendas"
+            {...layoutProps(c)}
           >
             <DayView {...props} />
           </StaffLayout>,

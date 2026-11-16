@@ -3,7 +3,7 @@ import { parsePrice } from '../../domain/money.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
 import { createServiceRepo, type ServiceInput } from '../../repos/services.ts'
 import type { Deps } from '../deps.ts'
-import { requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
+import { layoutProps, requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Servicos, type ServicosProps } from '../views/servicos.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -40,7 +40,7 @@ export function servicosRoutes({ db, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(auth, providerRepo))
+  app.use('*', staffMiddleware(auth, db))
   app.use('*', requireOwner())
 
   async function props(
@@ -66,12 +66,7 @@ export function servicosRoutes({ db, auth }: Deps) {
     const html = c.req.header('HX-Request') ? (
       <Servicos {...view} />
     ) : (
-      <StaffLayout
-        title="Serviços"
-        company={c.get('company')}
-        staff={c.get('staff')}
-        active="servicos"
-      >
+      <StaffLayout title="Serviços" active="servicos" {...layoutProps(c)}>
         <Servicos {...view} />
       </StaffLayout>
     )

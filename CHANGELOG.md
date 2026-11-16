@@ -3,6 +3,21 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 1.4 — Acesso de suporte — 2026-11-15
+
+- No backoffice dá para abrir uma janela de suporte de 2 horas num salão, e
+  encerrar antes do prazo. A janela vence sozinha.
+- Com a janela aberta, o seu e-mail da plataforma recebe link de acesso na porta
+  da equipe daquele salão (`equipe.<host>`). Sem janela, essa porta responde
+  como se o e-mail fosse desconhecido.
+- Dentro, você vê o salão como o dono vê: agendas, pedidos, horários e serviços.
+  A carteira de clientes, o cadastro da equipe e o registro de acessos ficam
+  fora, e o menu não oferece o que você não alcança.
+- Nada pode ser alterado. O bloqueio é por método da requisição, num lugar só —
+  rota de escrita nova já nasce protegida. A única escrita permitida é sair.
+- Abrir e encerrar ficam no registro de acessos do próprio salão, marcados como
+  suporte, com e-mail mascarado e o prazo da janela.
+
 ## 1.3 — Assinatura e suspensão — 2026-11-15
 
 - Cada salão tem uma assinatura: plano (mensal ou anual), valor e até quando

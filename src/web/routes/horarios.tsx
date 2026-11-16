@@ -6,7 +6,7 @@ import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
 import { createServiceRepo } from '../../repos/services.ts'
 import type { Deps } from '../deps.ts'
-import { type StaffEnv, staffMiddleware } from '../staff.ts'
+import { layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Horarios, type HorariosProps } from '../views/horarios.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -23,7 +23,7 @@ export function horariosRoutes({ db, auth }: Deps) {
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(auth, providerRepo))
+  app.use('*', staffMiddleware(auth, db))
 
   app.get('/', async (c: Context<StaffEnv>) => {
     const company = c.get('company')
@@ -60,7 +60,7 @@ export function horariosRoutes({ db, auth }: Deps) {
     return c.req.header('HX-Request')
       ? c.html(<Horarios {...props} />)
       : c.html(
-          <StaffLayout title="Horários" company={company} staff={c.get('staff')} active="horarios">
+          <StaffLayout title="Horários" active="horarios" {...layoutProps(c)}>
             <Horarios {...props} />
           </StaffLayout>,
         )

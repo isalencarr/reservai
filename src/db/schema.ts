@@ -290,7 +290,7 @@ export const verification = sqliteTable('verifications', {
 export type User = typeof user.$inferSelect
 export type Session = typeof session.$inferSelect
 
-export const AUTH_EVENT_TYPES = ['login', 'logout', 'login_failed'] as const
+export const AUTH_EVENT_TYPES = ['login', 'logout', 'login_failed', 'support'] as const
 
 /**
  * Registro de acesso da equipe. Guarda o suficiente para investigar um acesso
@@ -344,6 +344,30 @@ export const subscriptions = sqliteTable('subscriptions', {
 })
 
 export type Subscription = typeof subscriptions.$inferSelect
+
+/**
+ * Janela de suporte: quem administra a plataforma abre um prazo curto para
+ * olhar um salão. Tabela própria com prazo porque o acesso tem de vencer
+ * sozinho, e a abertura aparece no registro de acessos do próprio salão.
+ */
+export const supportSessions = sqliteTable(
+  'support_sessions',
+  {
+    id: id(),
+    companyId: text('company_id')
+      .notNull()
+      .references(() => companies.id, { onDelete: 'cascade' }),
+    adminEmail: text('admin_email').notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    revokedAt: timestamp('revoked_at'),
+    createdAt: timestamp('created_at')
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('support_sessions_company_expires').on(t.companyId, t.expiresAt)],
+)
+
+export type SupportSession = typeof supportSessions.$inferSelect
 
 /**
  * Quem pode abrir o backoffice. Tabela própria em vez de uma coluna em `users`

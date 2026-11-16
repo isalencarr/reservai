@@ -7,7 +7,6 @@ import { createLogNotifier } from '../notify/log-notifier.ts'
 import type { Notifier } from '../notify/notifier.ts'
 import { createAuthEventRepo } from '../repos/auth-events.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
-import { createProviderRepo } from '../repos/providers.ts'
 import { backofficeApp } from './backoffice/app.tsx'
 import { isBackofficeHost } from './backoffice/host.ts'
 import { agendaRoutes } from './routes/agenda.tsx'
@@ -18,7 +17,7 @@ import { horariosRoutes } from './routes/horarios.tsx'
 import { pendentesRoutes } from './routes/pendentes.tsx'
 import { reservaRoutes } from './routes/reserva.tsx'
 import { servicosRoutes } from './routes/servicos.tsx'
-import { staffOf } from './staff.ts'
+import { staffAccessOf } from './staff.ts'
 import { requireArea, type TenantEnv, tenantMiddleware } from './tenant.ts'
 import { Icon } from './views/icon.tsx'
 import { Indisponivel } from './views/indisponivel.tsx'
@@ -72,8 +71,8 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
   app.get('/', async (c) => {
     const company = c.get('company')
     if (c.get('area') === 'staff') {
-      const staff = await staffOf(deps.auth, createProviderRepo(db), c as never)
-      return c.redirect(staff ? '/equipe' : '/equipe/entrar', 303)
+      const access = await staffAccessOf(deps.auth, db, c as never)
+      return c.redirect(access ? '/equipe' : '/equipe/entrar', 303)
     }
     // Suspenso: a porta do cliente explica em vez de oferecer um agendamento
     // que a próxima tela recusaria.

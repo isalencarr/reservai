@@ -40,6 +40,13 @@ chave de tudo, e num sistema só de link por e-mail quem controla aquela caixa
 controla a plataforma. Sem `PLATFORM_OWNER_EMAIL`, o app sobe e o backoffice
 fica sem ninguém que consiga entrar.
 
+### Acesso de suporte
+
+Para olhar o salão de um cliente, abra uma janela de suporte no backoffice e
+entre em `equipe.<host>` com o seu e-mail da plataforma. A janela vence em 2
+horas, aparece no registro de acessos do dono e dá só leitura: carteira de
+clientes, cadastro da equipe e registro de acessos ficam fora.
+
 ### Criar um salão de verdade
 
 ```sh
@@ -159,7 +166,10 @@ recebe o link na hora.
 15. Salão suspenso não recebe pedido novo, mas continua mostrando e deixando
     cancelar o que já estava marcado, e a equipe continua entrando. A assinatura
     é conferida na mão pelo backoffice; nada suspende sozinho.
-16. Quem administra a plataforma entra por um host próprio e está em
+16. O acesso de suporte é uma janela curta, concedida no backoffice, só de
+    leitura, sem dados pessoais de cliente nem da equipe, e registrada em
+    `/equipe/acessos` do próprio salão.
+17. Quem administra a plataforma entra por um host próprio e está em
     `platform_admins`, lista criada na migração a partir do ambiente. Não existe
     cadastro aberto nessa porta, e a sessão de lá não abre a área de nenhum
     salão.

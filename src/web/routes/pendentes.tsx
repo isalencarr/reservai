@@ -4,7 +4,7 @@ import { formatWhen } from '../../domain/time.ts'
 import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createProviderRepo } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
-import { canManage, type StaffEnv, staffMiddleware } from '../staff.ts'
+import { canManage, layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Pendentes, type PendentesProps } from '../views/pendentes.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -14,7 +14,7 @@ export function pendentesRoutes({ db, notifier, auth }: Deps) {
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
   app.use('*', requireArea('staff'))
-  app.use('*', staffMiddleware(auth, providerRepo))
+  app.use('*', staffMiddleware(auth, db))
 
   async function props(
     companyId: string,
@@ -36,12 +36,7 @@ export function pendentesRoutes({ db, notifier, auth }: Deps) {
     c.req.header('HX-Request')
       ? c.html(<Pendentes {...view} />)
       : c.html(
-          <StaffLayout
-            title="Pedidos"
-            company={c.get('company')}
-            staff={c.get('staff')}
-            active="pedidos"
-          >
+          <StaffLayout title="Pedidos" active="pedidos" {...layoutProps(c)}>
             <Pendentes {...view} />
           </StaffLayout>,
         )

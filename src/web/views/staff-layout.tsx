@@ -1,6 +1,7 @@
 import type { FC, PropsWithChildren } from 'hono/jsx'
-import type { Company, Provider } from '../../db/schema.ts'
+import type { Company, Provider, SupportSession } from '../../db/schema.ts'
 import { themeCss } from '../../domain/theme.ts'
+import { formatTime } from '../../domain/time.ts'
 import { Icon } from './icon.tsx'
 
 export type StaffSection =
@@ -21,7 +22,15 @@ type Item = {
   ownerOnly?: boolean
 }
 
-function items(staff: Provider): Item[] {
+/** No suporte o menu encurta: carteira, equipe, acessos e aparência ficam
+ * fora, porque são dados pessoais do salão ou escrita que seria recusada. */
+function items(staff: Provider, support: boolean): Item[] {
+  return todosOsItens(staff).filter(
+    (item) => !support || ['agendas', 'pedidos', 'horarios', 'servicos'].includes(item.key),
+  )
+}
+
+function todosOsItens(staff: Provider): Item[] {
   return [
     {
       key: 'agendas',
@@ -68,11 +77,13 @@ type Props = PropsWithChildren<{
   company: Company
   staff: Provider
   active: StaffSection
+  /** Presente quando quem está vendo é o suporte da plataforma, não a equipe. */
+  support?: SupportSession | undefined
 }>
 
 /** Toda tela interna usa este layout: sem o menu, cada página vira um beco sem
  * saída e só se chega nela pela barra de endereço. */
-export const StaffLayout: FC<Props> = ({ title, company, staff, active, children }) => (
+export const StaffLayout: FC<Props> = ({ title, company, staff, active, support, children }) => (
   <html lang="pt-BR">
     <head>
       <meta charset="utf-8" />
@@ -91,8 +102,8 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
             {company.name}
           </h1>
           <span>
-            {staff.name}
-            {staff.role === 'owner' ? ' · dono' : ''}
+            {support ? `suporte · como ${staff.name}` : staff.name}
+            {!support && staff.role === 'owner' ? ' · dono' : ''}
           </span>
           <form class="signout" hx-post="/equipe/sair">
             <button type="submit" class="link">
@@ -103,7 +114,7 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
         </div>
         <nav class="menu">
           <div class="menu-items">
-            {items(staff).map((item) => (
+            {items(staff, support !== undefined).map((item) => (
               <a
                 key={item.key}
                 href={item.href}
@@ -120,6 +131,13 @@ export const StaffLayout: FC<Props> = ({ title, company, staff, active, children
       <main class="wrap">
         {/* O aviso sai do próprio salão, então toda tela interna o mostra sem
             cada rota precisar lembrar de passar. */}
+        {support ? (
+          <p class="error">
+            Acesso de suporte a {company.name}: você vê o salão como o dono vê, sem a carteira de
+            clientes nem os dados da equipe, e sem poder alterar nada. Vence às{' '}
+            {formatTime(support.expiresAt, company.timezone)}.
+          </p>
+        ) : null}
         {company.status === 'suspended' ? (
           <p class="error">
             Salão suspenso: o cliente não consegue marcar horário novo. O que já está confirmado

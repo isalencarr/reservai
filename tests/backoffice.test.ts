@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
-import { authEvents, companies, subscriptions } from '../src/db/schema.ts'
+import { authEvents, companies, subscriptions, supportSessions } from '../src/db/schema.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
 import { createPlatformAdminRepo } from '../src/repos/platform-admins.ts'
 import { createApp } from '../src/web/app.tsx'
@@ -327,5 +327,83 @@ describe('assinatura e suspensão', () => {
     expect(res.status).toBe(303)
     const [company] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
     expect(company?.status).toBe('active')
+  })
+})
+
+describe('acesso de suporte pelo backoffice', () => {
+  async function logado() {
+    const s = await setup()
+    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
+    const enviar = (path: string, campos: Record<string, string> = {}) =>
+      s.app.request(path, {
+        method: 'POST',
+        headers: { ...FORM, host: HOST, cookie },
+        body: new URLSearchParams(campos),
+      })
+    return { ...s, cookie, enviar }
+  }
+
+  it('abre a janela e registra no log do salão', async () => {
+    const s = await logado()
+    const res = await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('Encerrar suporte')
+
+    const [sessao] = await s.db.select().from(supportSessions)
+    expect(sessao).toMatchObject({ companyId: s.belezaPura.id, adminEmail: DONO.email })
+
+    const [evento] = await s.db.select().from(authEvents).where(eq(authEvents.type, 'support'))
+    expect(evento).toMatchObject({ companyId: s.belezaPura.id })
+    expect(evento?.reason).toContain('acesso aberto até')
+    expect(evento?.emailMasked).not.toContain(DONO.email)
+  })
+
+  it('o dono enxerga o acesso em /equipe/acessos', async () => {
+    const s = await logado()
+    await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+
+    const equipe = 'equipe.beleza-pura.localhost'
+    const cookie = await magicLogin(
+      s.app,
+      s.notifier,
+      equipe,
+      s.carla.email ?? '',
+      '/equipe/entrar',
+    )
+    const res = await s.app.request('/equipe/acessos', { headers: { host: equipe, cookie } })
+
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('suporte da plataforma')
+  })
+
+  it('encerra a janela antes do prazo', async () => {
+    const s = await logado()
+    await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+    const [sessao] = await s.db.select().from(supportSessions)
+    if (!sessao) throw new Error('a janela não foi aberta')
+
+    const res = await s.enviar(`/suporte/${sessao.id}/encerrar`)
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('Abrir suporte')
+
+    const [depois] = await s.db.select().from(supportSessions)
+    expect(depois?.revokedAt).toBeInstanceOf(Date)
+
+    const motivos = (
+      await s.db.select().from(authEvents).where(eq(authEvents.type, 'support'))
+    ).map((e) => e.reason)
+    expect(motivos).toContain('acesso encerrado')
+  })
+
+  it('não deixa abrir suporte sem sessão', async () => {
+    const s = await setup()
+    const res = await s.app.request(`/saloes/${s.belezaPura.id}/suporte`, {
+      method: 'POST',
+      headers: { ...FORM, host: HOST },
+    })
+
+    expect(res.status).toBe(303)
+    expect(await s.db.select().from(supportSessions)).toHaveLength(0)
   })
 })

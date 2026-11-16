@@ -24,6 +24,7 @@ export interface ProviderRepo {
   findById(companyId: string, id: string): Promise<Provider | undefined>
   findByPhone(companyId: string, phone: string): Promise<Provider | undefined>
   findByEmail(companyId: string, email: string): Promise<Provider | undefined>
+  findOwner(companyId: string): Promise<Provider | undefined>
   hoursFor(providerId: string): Promise<WorkHour[]>
 }
 
@@ -115,6 +116,18 @@ export function createProviderRepo(db: Db): ProviderRepo {
       const normalized = email.trim().toLowerCase()
       return db.query.providers.findFirst({
         where: and(eq(providers.companyId, companyId), eq(providers.email, normalized)),
+      })
+    },
+
+    /** Usado pelo acesso de suporte: ele entra vendo o salão como o dono vê. */
+    async findOwner(companyId) {
+      return db.query.providers.findFirst({
+        where: and(
+          eq(providers.companyId, companyId),
+          eq(providers.role, 'owner'),
+          eq(providers.active, true),
+        ),
+        orderBy: asc(providers.createdAt),
       })
     },
 
