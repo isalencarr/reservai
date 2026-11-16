@@ -104,6 +104,8 @@ HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
 - `src/web/` — servidor Hono, resolução do salão pelo domínio, rotas e telas (HTMX).
 - `src/web/backoffice/` — o app da plataforma. Host próprio, sem salão no
   contexto: nenhuma rota daqui enxerga `company`.
+- `src/repos/setup.ts` — consulta de leitura que cruza serviços, equipe e
+  jornada para dizer o que falta configurar. Alimenta o guia e o aviso do topo.
 - `src/platform/` — operações da plataforma sobre os salões (criar, editar).
   Usadas pelo backoffice e pelo comando de terminal, com a mesma regra.
 - `src/notify/` — mensagens fora da tela. Hoje só a versão em log; o canal real
@@ -112,23 +114,24 @@ HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
 
 ## Telas
 
-| Rota                    | Endereço   | Quem acessa                                |
-| ----------------------- | ---------- | ------------------------------------------ |
-| `/`                     | cliente    | qualquer pessoa                            |
-| `/entrar`               | cliente    | nome, telefone e código                    |
-| `/reserva`              | cliente    | pedido em passos                           |
-| `/reserva/meus`         | cliente    | seus horários e cancelamento               |
-| `/equipe/entrar`        | equipe     | e-mail e link de acesso                    |
-| `/equipe`               | equipe     | agendas do salão; prestador cai na própria |
-| `/equipe/pessoas`       | equipe     | só o dono: convidar, editar e desativar    |
-| `/equipe/acessos`       | equipe     | só o dono: entradas, saídas e recusas      |
-| `/agenda/:prestador`    | equipe     | o próprio prestador ou o dono              |
-| `/pendentes/:prestador` | equipe     | o próprio prestador ou o dono              |
-| `/horarios`             | equipe     | conferência da disponibilidade             |
-| `/servicos`             | equipe     | só o dono                                  |
-| `/clientes`             | equipe     | só o dono                                  |
-| `/entrar`               | backoffice | e-mail da plataforma e link de acesso      |
-| `/`                     | backoffice | lista dos salões em operação               |
+| Rota                    | Endereço   | Quem acessa                                  |
+| ----------------------- | ---------- | -------------------------------------------- |
+| `/`                     | cliente    | qualquer pessoa                              |
+| `/entrar`               | cliente    | nome, telefone e código                      |
+| `/reserva`              | cliente    | pedido em passos                             |
+| `/reserva/meus`         | cliente    | seus horários e cancelamento                 |
+| `/equipe/entrar`        | equipe     | e-mail e link de acesso                      |
+| `/equipe`               | equipe     | agendas do salão; prestador cai na própria   |
+| `/equipe/pessoas`       | equipe     | só o dono: convidar, editar e desativar      |
+| `/equipe/acessos`       | equipe     | só o dono: entradas, saídas e recusas        |
+| `/equipe/guia`          | equipe     | como o app funciona e o que falta configurar |
+| `/agenda/:prestador`    | equipe     | o próprio prestador ou o dono                |
+| `/pendentes/:prestador` | equipe     | o próprio prestador ou o dono                |
+| `/horarios`             | equipe     | conferência da disponibilidade               |
+| `/servicos`             | equipe     | só o dono                                    |
+| `/clientes`             | equipe     | só o dono                                    |
+| `/entrar`               | backoffice | e-mail da plataforma e link de acesso        |
+| `/`                     | backoffice | lista dos salões em operação                 |
 
 A equipe entra por e-mail: pede um link em `/equipe/entrar` e o link chega pelo
 notificador. Em desenvolvimento ele aparece no terminal do servidor, com o
@@ -169,7 +172,10 @@ recebe o link na hora.
 16. O acesso de suporte é uma janela curta, concedida no backoffice, só de
     leitura, sem dados pessoais de cliente nem da equipe, e registrada em
     `/equipe/acessos` do próprio salão.
-17. Quem administra a plataforma entra por um host próprio e está em
+17. Salão novo nasce com o endereço no ar e vazio, então o app diz o que falta:
+    serviço ativo, alguém marcado para executar cada serviço e jornada para quem
+    atende. O guia lista, e o aviso do topo só conta o que impede de marcar.
+18. Quem administra a plataforma entra por um host próprio e está em
     `platform_admins`, lista criada na migração a partir do ambiente. Não existe
     cadastro aberto nessa porta, e a sessão de lá não abre a área de nenhum
     salão.

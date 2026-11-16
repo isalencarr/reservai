@@ -20,6 +20,7 @@ import { requireArea, type TenantEnv } from '../tenant.ts'
 import { Acessos } from '../views/acessos.tsx'
 import { Aparencia } from '../views/aparencia.tsx'
 import { EntrarEquipe, type EntrarEquipeProps, Painel } from '../views/equipe.tsx'
+import { Guia } from '../views/guia.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Pessoas, type PessoasProps } from '../views/pessoas.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -296,6 +297,18 @@ export function equipeRoutes({ db, auth }: Deps) {
     )
   })
 
+  /** O guia é a porta de entrada de quem está começando, então vale para a
+   * equipe toda: cada um vê a explicação das telas que alcança. */
+  const guia = new Hono<StaffEnv>()
+  guia.use('*', staffMiddleware(auth, db))
+  guia.get('/', (c) =>
+    c.html(
+      <StaffLayout title="Guia" active="guia" {...layoutProps(c)}>
+        <Guia company={c.get('company')} staff={c.get('staff')} pendencias={c.get('pendencias')} />
+      </StaffLayout>,
+    ),
+  )
+
   /** Aparência é identidade do salão: fica com o dono. */
   const aparencia = new Hono<StaffEnv>()
   aparencia.use('*', staffMiddleware(auth, db))
@@ -323,6 +336,7 @@ export function equipeRoutes({ db, auth }: Deps) {
     return c.redirect('/equipe/aparencia', 303)
   })
 
+  app.route('/guia', guia)
   app.route('/aparencia', aparencia)
   app.route('/acessos', acessos)
   app.route('/pessoas', pessoas)

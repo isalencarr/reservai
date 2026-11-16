@@ -31,6 +31,7 @@ const ICONS = [
   'event_available',
   'block',
   'storefront',
+  'help',
 ] as const
 
 const SOURCE = 'node_modules/@material-symbols/svg-400/rounded'

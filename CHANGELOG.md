@@ -3,6 +3,19 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 2.2 — Guia do dono — 2026-11-15
+
+- Tela nova em `/equipe/guia`, primeiro item do menu. Em cima, o que falta
+  configurar, com cada item levando para a tela que resolve. Embaixo, como
+  funciona cada parte do app, começando pelo que o cliente vê.
+- Enquanto faltar algo que impeça o cliente de marcar, um aviso aparece no topo
+  de toda tela interna, com link para o guia. Convite de equipe não aceito
+  aparece no guia, mas não vira tarja: não impede ninguém de marcar.
+- Com tudo configurado, o guia mostra o endereço do cliente para copiar e
+  divulgar, e lembra que o endereço da equipe não vai para o cliente.
+- Quem atende também abre o guia, com a explicação das telas que alcança e sem
+  o checklist, que é tarefa do dono.
+
 ## 2.1 — O app sabe o que falta configurar — 2026-11-15
 
 - Uma regra nova responde se o salão está pronto para receber cliente: precisa

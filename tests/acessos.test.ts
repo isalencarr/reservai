@@ -184,7 +184,9 @@ describe('navegação da área interna', () => {
     expect(html).toContain('Minha agenda')
     expect(html).not.toContain('/clientes')
     expect(html).not.toContain('/equipe/acessos')
-    expect(html.match(/class="menu-link/g)).toHaveLength(3)
+    // Guia, Minha agenda, Pedidos e Horários.
+    expect(html).toContain('/equipe/guia')
+    expect(html.match(/class="menu-link/g)).toHaveLength(4)
   })
 
   it('marca a tela atual no menu', async () => {
