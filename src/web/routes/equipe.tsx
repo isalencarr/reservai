@@ -3,6 +3,13 @@ import { normalizeEmail } from '../../domain/email.ts'
 import { normalizePhone } from '../../domain/phone.ts'
 import { clientIp } from '../../domain/privacy.ts'
 import { isThemeMode, paletteOf } from '../../domain/theme.ts'
+import { parseMinute } from '../../domain/time.ts'
+import {
+  defaultWorkweek,
+  WEEKDAY_NAMES,
+  type WorkRange,
+  workweekError,
+} from '../../domain/workday.ts'
 import { createAppointmentRepo } from '../../repos/appointments.ts'
 import { createAuthEventRepo } from '../../repos/auth-events.ts'
 import { createCompanyRepo } from '../../repos/companies.ts'
@@ -21,6 +28,7 @@ import { Acessos } from '../views/acessos.tsx'
 import { Aparencia } from '../views/aparencia.tsx'
 import { EntrarEquipe, type EntrarEquipeProps, Painel } from '../views/equipe.tsx'
 import { Guia } from '../views/guia.tsx'
+import { Jornada, type JornadaProps } from '../views/jornada.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Pessoas, type PessoasProps } from '../views/pessoas.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
@@ -309,6 +317,92 @@ export function equipeRoutes({ db, auth }: Deps) {
     ),
   )
 
+  /** Jornada é escala do salão, então fica com o dono: quem atende não decide
+   * sozinho quando a própria agenda abre. */
+  const jornada = new Hono<StaffEnv>()
+  jornada.use('*', staffMiddleware(auth, db))
+  jornada.use('*', requireOwner())
+
+  async function jornadaView(
+    c: Context<StaffEnv>,
+    options: { pessoaId?: string; error?: string; saved?: boolean } = {},
+    status = 200,
+  ) {
+    const company = c.get('company')
+    const equipe = await providerRepo.listByCompany(company.id)
+    const pessoa = equipe.find((p) => p.id === options.pessoaId) ?? equipe[0]
+    if (!pessoa) return c.notFound()
+
+    const semanas = await Promise.all(
+      equipe.map(async (membro) => {
+        const horas = await providerRepo.hoursFor(membro.id)
+        return { pessoa: membro, dias: new Set(horas.map((h) => h.weekday)).size }
+      }),
+    )
+
+    const view: JornadaProps = {
+      items: semanas,
+      pessoa,
+      ranges: await providerRepo.hoursFor(pessoa.id),
+      error: options.error,
+      saved: options.saved,
+    }
+
+    return c.html(
+      c.req.header('HX-Request') ? (
+        <Jornada {...view} />
+      ) : (
+        <StaffLayout title="Jornada" active="jornada" {...layoutProps(c)}>
+          <Jornada {...view} />
+        </StaffLayout>
+      ),
+      status as 200,
+    )
+  }
+
+  /** Duas faixas por dia no formulário: a lacuna entre elas é o almoço. Campo
+   * vazio apaga a faixa, e dia sem faixa é folga. */
+  function readSemana(body: Record<string, unknown>): WorkRange[] | { error: string } {
+    const ranges: WorkRange[] = []
+    for (const weekday of WEEKDAY_NAMES.keys()) {
+      for (const faixa of [1, 2]) {
+        const inicio = parseMinute(body[`d${weekday}i${faixa}`])
+        const fim = parseMinute(body[`d${weekday}f${faixa}`])
+        if (inicio === undefined && fim === undefined) continue
+        if (inicio === undefined || fim === undefined) {
+          return { error: `Em ${WEEKDAY_NAMES[weekday]}, a faixa precisa de início e fim.` }
+        }
+        ranges.push({ weekday, startMinute: inicio, endMinute: fim })
+      }
+    }
+
+    const erro = workweekError(ranges)
+    return erro ? { error: erro } : ranges
+  }
+
+  jornada.get('/', (c) => jornadaView(c, { pessoaId: c.req.query('pessoa') }))
+
+  jornada.post('/:id', async (c) => {
+    const id = c.req.param('id') ?? ''
+    const pessoa = await providerRepo.findById(c.get('company').id, id)
+    if (!pessoa) return c.notFound()
+
+    const semana = readSemana(await c.req.parseBody())
+    if ('error' in semana) return jornadaView(c, { pessoaId: id, error: semana.error }, 422)
+
+    await providerRepo.replaceHours(id, semana)
+    return jornadaView(c, { pessoaId: id, saved: true })
+  })
+
+  jornada.post('/:id/padrao', async (c) => {
+    const id = c.req.param('id') ?? ''
+    const pessoa = await providerRepo.findById(c.get('company').id, id)
+    if (!pessoa) return c.notFound()
+
+    await providerRepo.replaceHours(id, defaultWorkweek())
+    return jornadaView(c, { pessoaId: id, saved: true })
+  })
+
   /** Aparência é identidade do salão: fica com o dono. */
   const aparencia = new Hono<StaffEnv>()
   aparencia.use('*', staffMiddleware(auth, db))
@@ -338,6 +432,7 @@ export function equipeRoutes({ db, auth }: Deps) {
 
   app.route('/guia', guia)
   app.route('/aparencia', aparencia)
+  app.route('/jornada', jornada)
   app.route('/acessos', acessos)
   app.route('/pessoas', pessoas)
   app.route('/', painel)

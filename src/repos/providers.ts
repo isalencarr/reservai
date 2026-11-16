@@ -2,7 +2,7 @@ import { and, asc, eq, ne } from 'drizzle-orm'
 import type { Db } from '../db/client.ts'
 import { type Provider, providerHours, providers } from '../db/schema.ts'
 import type { WorkHour } from '../domain/schedule.ts'
-import { defaultWorkweek } from '../domain/workday.ts'
+import { defaultWorkweek, type WorkRange } from '../domain/workday.ts'
 
 export type ProviderInput = {
   name: string
@@ -26,6 +26,7 @@ export interface ProviderRepo {
   findByEmail(companyId: string, email: string): Promise<Provider | undefined>
   findOwner(companyId: string): Promise<Provider | undefined>
   hoursFor(providerId: string): Promise<WorkHour[]>
+  replaceHours(providerId: string, ranges: WorkRange[]): Promise<void>
 }
 
 export function createProviderRepo(db: Db): ProviderRepo {
@@ -141,6 +142,19 @@ export function createProviderRepo(db: Db): ProviderRepo {
         .from(providerHours)
         .where(eq(providerHours.providerId, providerId))
         .orderBy(asc(providerHours.weekday), asc(providerHours.startMinute))
+    },
+
+    /** A semana troca inteira numa transação: meio-caminho entre apagar e
+     * inserir deixaria a agenda sem oferecer nada. */
+    async replaceHours(providerId, ranges) {
+      db.transaction((tx) => {
+        tx.delete(providerHours).where(eq(providerHours.providerId, providerId)).run()
+        if (ranges.length > 0) {
+          tx.insert(providerHours)
+            .values(ranges.map((range) => ({ providerId, ...range })))
+            .run()
+        }
+      })
     },
   }
 }

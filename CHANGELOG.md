@@ -3,6 +3,22 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 3.1 — Jornada de quem atende — 2026-11-16
+
+- Tela nova em `/equipe/jornada`, só do dono: a semana de cada pessoa, sete dias
+  com duas faixas por dia. A lacuna entre as faixas é o almoço, dia sem faixa
+  nenhuma é folga, e um botão repõe a jornada padrão de segunda a sábado.
+- Antes disso não existia onde mudar jornada: ela só nascia junto com a pessoa.
+  O `/horarios` era, e continua sendo, apenas consulta de horário livre — o guia
+  dizia o contrário e foi corrigido.
+- A semana é conferida antes de gravar: fim depois do início, horário dentro do
+  dia e faixas que não se cruzam. Faixa que encosta na outra passa, porque o
+  cálculo da agenda já junta as duas.
+- A semana troca inteira de uma vez. Nada de meio-caminho entre apagar a antiga
+  e gravar a nova, que deixaria a agenda sem oferecer nada.
+- A pendência "sem horário de trabalho" agora leva para essa tela, e o acesso de
+  suporte vê a jornada sem poder mudar.
+
 ## 2.2 — Guia do dono — 2026-11-15
 
 - Tela nova em `/equipe/guia`, primeiro item do menu. Em cima, o que falta

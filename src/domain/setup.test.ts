@@ -27,9 +27,12 @@ describe('pendências de setup', () => {
     expect(prontoParaDivulgar(pendencias)).toBe(false)
   })
 
-  it('profissional sem jornada manda para os horários', () => {
+  it('profissional sem jornada manda para a jornada', () => {
     const pendencias = pendenciasDeSetup({ ...completo, profissionaisSemJornada: ['Rafa Lima'] })
-    expect(pendencias[0]).toMatchObject({ key: 'profissional-sem-jornada', href: '/horarios' })
+    expect(pendencias[0]).toMatchObject({
+      key: 'profissional-sem-jornada',
+      href: '/equipe/jornada',
+    })
   })
 
   it('convite não aceito avisa, mas não impede divulgar', () => {

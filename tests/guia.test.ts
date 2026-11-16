@@ -120,7 +120,7 @@ describe('página do guia', () => {
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
     expect(html).toContain('Sem horário de trabalho: Rafa Lima')
-    expect(html).toContain('/horarios')
+    expect(html).toContain('/equipe/jornada')
   })
 
   it('explica o app para quem atende, sem as telas do dono', async () => {

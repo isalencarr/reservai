@@ -103,6 +103,19 @@ export function formatMinute(minute: number): string {
   return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`
 }
 
+const TIME_PATTERN = /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+
+/** Inverso de `formatMinute`, para ler o `input type="time"` do formulário.
+ * Vazio, fora do formato ou fora do dia devolve `undefined`. */
+export function parseMinute(raw: unknown): number | undefined {
+  if (typeof raw !== 'string') return undefined
+  const match = TIME_PATTERN.exec(raw.trim())
+  if (!match) return undefined
+  const [, hour = '', minute = ''] = match
+  const total = Number(hour) * 60 + Number(minute)
+  return Number(minute) < 60 && total <= DAY_MINUTES ? total : undefined
+}
+
 const longDate = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'UTC',
   weekday: 'long',

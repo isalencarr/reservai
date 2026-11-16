@@ -54,8 +54,18 @@ const secoesPara = (staff: Provider): Secao[] => [
     icone: 'schedule',
     href: '/horarios',
     linhas: [
-      'A jornada de cada pessoa, por dia da semana. Almoço no meio do dia são duas faixas no mesmo dia.',
-      'Sem jornada, a agenda não oferece nada ao cliente — é o primeiro lugar onde alguém acha que o app está quebrado.',
+      'Mostra os horários livres de um serviço num dia, do mesmo jeito que o cliente vê. Serve para responder quem liga.',
+      'Nada é marcado aqui: é consulta. Quem muda a jornada é a tela de Jornada.',
+    ],
+  },
+  {
+    titulo: 'Jornada',
+    icone: 'event_repeat',
+    href: '/equipe/jornada',
+    ownerOnly: true,
+    linhas: [
+      'O horário de trabalho de cada pessoa, por dia da semana. Duas faixas no mesmo dia deixam o almoço de fora.',
+      'Dia sem faixa nenhuma é folga. Sem jornada, a agenda não oferece nada ao cliente — é o primeiro lugar onde alguém acha que o app está quebrado.',
     ],
   },
   {

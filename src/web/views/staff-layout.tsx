@@ -10,6 +10,7 @@ export type StaffSection =
   | 'agendas'
   | 'pedidos'
   | 'horarios'
+  | 'jornada'
   | 'servicos'
   | 'clientes'
   | 'pessoas'
@@ -28,7 +29,9 @@ type Item = {
  * fora, porque são dados pessoais do salão ou escrita que seria recusada. */
 function items(staff: Provider, support: boolean): Item[] {
   return todosOsItens(staff).filter(
-    (item) => !support || ['guia', 'agendas', 'pedidos', 'horarios', 'servicos'].includes(item.key),
+    (item) =>
+      !support ||
+      ['guia', 'agendas', 'pedidos', 'horarios', 'jornada', 'servicos'].includes(item.key),
   )
 }
 
@@ -43,6 +46,13 @@ function todosOsItens(staff: Provider): Item[] {
     },
     { key: 'pedidos', label: 'Pedidos', href: `/pendentes/${staff.id}`, icon: 'pending_actions' },
     { key: 'horarios', label: 'Horários', href: '/horarios', icon: 'schedule' },
+    {
+      key: 'jornada',
+      label: 'Jornada',
+      href: '/equipe/jornada',
+      icon: 'event_repeat',
+      ownerOnly: true,
+    },
     {
       key: 'servicos',
       label: 'Serviços',

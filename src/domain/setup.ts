@@ -56,7 +56,7 @@ export function pendenciasDeSetup(dados: DadosDeSetup): Pendencia[] {
     pendencias.push({
       key: 'profissional-sem-jornada',
       texto: `Sem horário de trabalho: ${lista(dados.profissionaisSemJornada)}.`,
-      href: '/horarios',
+      href: '/equipe/jornada',
       bloqueia: true,
     })
   }
