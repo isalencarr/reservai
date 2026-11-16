@@ -754,6 +754,42 @@ header.app .wrap .signout {
   flex: 1;
 }
 
+/* --- guia: cartão por assunto, um embaixo do outro --- */
+
+#guia .people,
+#guia .empty {
+  margin-bottom: 20px;
+}
+
+#guia .card {
+  display: grid;
+  gap: 8px;
+}
+
+#guia .card + .card {
+  margin-top: 16px;
+}
+
+#guia .card strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+}
+
+#guia .card p {
+  margin: 0;
+}
+
+#guia .card .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  margin-top: 6px;
+  text-decoration: none;
+}
+
 /* --- jornada: a semana em sete linhas --- */
 
 .week {
