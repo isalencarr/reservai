@@ -3,6 +3,16 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 2.1 — O app sabe o que falta configurar — 2026-11-15
+
+- Uma regra nova responde se o salão está pronto para receber cliente: precisa
+  de serviço ativo, de alguém marcado para executar cada serviço e de jornada
+  para quem atende. Convite de equipe não aceito entra como aviso, não como
+  impedimento.
+- A conta é feita uma vez por tela interna aberta, então o aviso do próximo
+  marco não depende de cada rota lembrar de calcular.
+- Ainda não aparece na tela: isso é o marco 2.2.
+
 ## 1.4 — Acesso de suporte — 2026-11-15
 
 - No backoffice dá para abrir uma janela de suporte de 2 horas num salão, e

@@ -2,8 +2,10 @@ import type { Context, MiddlewareHandler } from 'hono'
 import type { Auth } from '../auth/config.ts'
 import type { Db } from '../db/client.ts'
 import type { Provider, SupportSession } from '../db/schema.ts'
+import { type Pendencia, pendenciasDeSetup } from '../domain/setup.ts'
 import { createPlatformAdminRepo } from '../repos/platform-admins.ts'
 import { createProviderRepo } from '../repos/providers.ts'
+import { createSetupRepo } from '../repos/setup.ts'
 import { createSupportSessionRepo } from '../repos/support-sessions.ts'
 import type { TenantEnv } from './tenant.ts'
 
@@ -11,6 +13,7 @@ export type StaffEnv = TenantEnv & {
   Variables: TenantEnv['Variables'] & {
     staff: Provider
     support: SupportSession | undefined
+    pendencias: Pendencia[]
   }
 }
 
@@ -95,6 +98,13 @@ export function staffMiddleware(auth: Auth, db: Db): MiddlewareHandler<StaffEnv>
     if (access.support && c.req.method !== 'GET' && new URL(c.req.url).pathname !== SAIDA) {
       return c.text('O acesso de suporte é só de leitura.', 403)
     }
+
+    // O aviso do que falta configurar aparece em toda tela interna, então é
+    // calculado aqui e não em cada rota. Em escrita ninguém mostra aviso.
+    const dados =
+      c.req.method === 'GET' ? await createSetupRepo(db).dataFor(c.get('company').id) : undefined
+    c.set('pendencias', dados ? pendenciasDeSetup(dados) : [])
+
     await next()
   }
 }
@@ -132,5 +142,6 @@ export function layoutProps(c: Context<StaffEnv>) {
     company: c.get('company'),
     staff: c.get('staff'),
     support: c.get('support'),
+    pendencias: c.get('pendencias'),
   }
 }

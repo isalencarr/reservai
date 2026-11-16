@@ -333,6 +333,25 @@ header.app .wrap > span {
   font-size: 0.875rem;
 }
 
+/* Aviso que não é erro: pendência de configuração e modo suporte. */
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--shape-sm);
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-size: 0.875rem;
+}
+
+.notice a {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
 .tag {
   color: var(--md-on-surface-variant);
   font-size: 0.75rem;
