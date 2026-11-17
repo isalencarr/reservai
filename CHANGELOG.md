@@ -17,6 +17,9 @@ usa — a lista de arquivos está no histórico do git.
   monta.
 - A agenda da equipe usava `?date=` e as telas do cliente `?data=` para a mesma
   coisa. Virou `?data=` em todo lugar.
+- O plano da assinatura era gravado como `mensal`/`anual` e agora é
+  `monthly`/`yearly`. A migração traduz o que já estava no banco; o backoffice
+  continua mostrando "mensal" e "anual" para quem administra.
 
 ## 3.2 — Passo a passo da montagem — 2026-11-17
 

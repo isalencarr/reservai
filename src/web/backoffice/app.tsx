@@ -164,7 +164,7 @@ export function backofficeApp({ db, auth }: Deps) {
     if (!company) return c.notFound()
 
     const body = await c.req.parseBody()
-    const plan = text(body, WIRE.plan) === 'anual' ? 'anual' : 'mensal'
+    const plan = text(body, WIRE.plan) === 'yearly' ? 'yearly' : 'monthly'
     const priceCents = parsePrice(text(body, WIRE.amount))
     if (priceCents === undefined) {
       return renderPanel(

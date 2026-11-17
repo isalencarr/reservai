@@ -320,7 +320,7 @@ export type AuthEvent = typeof authEvents.$inferSelect
  * Plataforma: o que existe acima dos salões.
  * ----------------------------------------------------------------------- */
 
-export const SUBSCRIPTION_PLANS = ['mensal', 'anual'] as const
+export const SUBSCRIPTION_PLANS = ['monthly', 'yearly'] as const
 
 /**
  * Assinatura do salão, conferida na mão: plano, valor e até quando está pago.
@@ -334,7 +334,7 @@ export const subscriptions = sqliteTable('subscriptions', {
     .notNull()
     .unique()
     .references(() => companies.id, { onDelete: 'cascade' }),
-  plan: text('plan', { enum: SUBSCRIPTION_PLANS }).notNull().default('mensal'),
+  plan: text('plan', { enum: SUBSCRIPTION_PLANS }).notNull().default('monthly'),
   priceCents: integer('price_cents'),
   paidUntil: timestamp('paid_until'),
   note: text('note'),

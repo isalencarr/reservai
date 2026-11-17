@@ -98,7 +98,7 @@ export async function createCompany(
   // A assinatura nasce junto e sem pagamento registrado: salão novo entra na
   // lista como pendente de cobrança, que não é o mesmo que vencido.
   await createSubscriptionRepo(db).save(company.id, {
-    plan: 'mensal',
+    plan: 'monthly',
     priceCents: null,
     paidUntil: null,
   })

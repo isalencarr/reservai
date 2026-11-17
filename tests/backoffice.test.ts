@@ -236,6 +236,26 @@ describe('assinatura e suspensão', () => {
     return d.toISOString().slice(0, 10)
   }
 
+  it('a tela mostra o plano em português e grava o valor em inglês', async () => {
+    const s = await loggedIn()
+
+    // O plano só aparece no painel de editar o salão.
+    const screen = await (
+      await s.app.request(`/?editar=${s.belezaPura.id}`, {
+        headers: { host: HOST, cookie: s.cookie },
+      })
+    ).text()
+    expect(screen).toContain('>mensal</option>')
+    expect(screen).toContain('value="yearly"')
+
+    await s.send(`/saloes/${s.belezaPura.id}/assinatura`, { plano: 'yearly', valor: '149,00' })
+    const [row] = await s.db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.companyId, s.belezaPura.id))
+    expect(row?.plan).toBe('yearly')
+  })
+
   it('salão criado aqui nasce sem pagamento registrado', async () => {
     const s = await loggedIn()
     await s.send('/saloes', {
@@ -255,7 +275,7 @@ describe('assinatura e suspensão', () => {
   it('marca o pagamento e a lista passa a dizer até quando', async () => {
     const s = await loggedIn()
     const res = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
-      plano: 'anual',
+      plano: 'yearly',
       valor: '149,00',
       pago_ate: future(),
     })
@@ -264,13 +284,13 @@ describe('assinatura e suspensão', () => {
     expect(await res.text()).toContain('pago até')
 
     const [assinatura] = await s.db.select().from(subscriptions)
-    expect(assinatura).toMatchObject({ plan: 'anual', priceCents: 14900 })
+    expect(assinatura).toMatchObject({ plan: 'yearly', priceCents: 14900 })
 
     // O prazo é guardado como a virada do dia; a tela tem de mostrar o dia pago,
     // não o seguinte.
     const day = future()
     await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
-      plano: 'mensal',
+      plano: 'monthly',
       valor: '149,00',
       pago_ate: day,
     })
@@ -283,7 +303,7 @@ describe('assinatura e suspensão', () => {
     const s = await loggedIn()
 
     const priced = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
-      plano: 'mensal',
+      plano: 'monthly',
       valor: 'muito',
       pago_ate: future(),
     })
@@ -291,7 +311,7 @@ describe('assinatura e suspensão', () => {
     expect(await priced.text()).toContain('Valor inválido')
 
     const data = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
-      plano: 'mensal',
+      plano: 'monthly',
       valor: '149,00',
       pago_ate: '30/12/2026',
     })

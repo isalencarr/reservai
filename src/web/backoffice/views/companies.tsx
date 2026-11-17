@@ -39,7 +39,11 @@ const TIMEZONES = [
   'America/Noronha',
 ]
 
-const PLANS: Subscription['plan'][] = ['mensal', 'anual']
+/** O valor vai gravado em inglês; o rótulo é o que quem administra lê. */
+const PLANS: { value: Subscription['plan']; label: string }[] = [
+  { value: 'monthly', label: 'mensal' },
+  { value: 'yearly', label: 'anual' },
+]
 
 /** O que a lista precisa dizer de cada salão em uma linha: se está no ar e se
  * está pago. */
@@ -158,13 +162,13 @@ const SubscriptionBlock: FC<{ row: CompanyRow }> = ({ row }) => {
         <label>
           Plano
           <select name={WIRE.plan}>
-            {PLANS.map((plano) => (
+            {PLANS.map((plan) => (
               <option
-                key={plano}
-                value={plano}
-                selected={(subscription?.plan ?? 'mensal') === plano}
+                key={plan.value}
+                value={plan.value}
+                selected={(subscription?.plan ?? 'monthly') === plan.value}
               >
-                {plano}
+                {plan.label}
               </option>
             ))}
           </select>
