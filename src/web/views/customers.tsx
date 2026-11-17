@@ -5,7 +5,7 @@ import type { CustomerEntry } from '../../repos/appointments.ts'
 import type { CustomerRow } from '../../repos/customers.ts'
 import { Icon } from './icon.tsx'
 
-export type ClientesProps = {
+export type CustomersProps = {
   items: CustomerRow[]
   query: string
   timeZone: string
@@ -55,7 +55,7 @@ const Historico: FC<{
   </div>
 )
 
-export const Clientes: FC<ClientesProps> = ({ items, query, timeZone, viewing }) => (
+export const Customers: FC<CustomersProps> = ({ items, query, timeZone, viewing }) => (
   <section id="clientes" hx-target="#clientes" hx-swap="outerHTML">
     <div class="hero">
       <Icon name="group" class="hero-icon" />

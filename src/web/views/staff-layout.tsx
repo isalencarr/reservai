@@ -6,16 +6,16 @@ import { formatTime } from '../../domain/time.ts'
 import { Icon } from './icon.tsx'
 
 export type StaffSection =
-  | 'guia'
-  | 'agendas'
-  | 'pedidos'
-  | 'horarios'
-  | 'jornada'
-  | 'servicos'
-  | 'clientes'
-  | 'pessoas'
-  | 'acessos'
-  | 'aparencia'
+  | 'guide'
+  | 'schedules'
+  | 'requests'
+  | 'availability'
+  | 'workweek'
+  | 'services'
+  | 'customers'
+  | 'people'
+  | 'access'
+  | 'appearance'
 
 type Item = {
   key: StaffSection
@@ -28,55 +28,55 @@ type Item = {
 /** No suporte o menu encurta: carteira, equipe, acessos e aparência ficam
  * fora, porque são dados pessoais do salão ou escrita que seria recusada. */
 function items(staff: Provider, support: boolean): Item[] {
-  return todosOsItens(staff).filter(
+  return allItems(staff).filter(
     (item) =>
       !support ||
-      ['guia', 'agendas', 'pedidos', 'horarios', 'jornada', 'servicos'].includes(item.key),
+      ['guide', 'schedules', 'requests', 'availability', 'workweek', 'services'].includes(item.key),
   )
 }
 
-function todosOsItens(staff: Provider): Item[] {
+function allItems(staff: Provider): Item[] {
   return [
-    { key: 'guia', label: 'Guia', href: '/equipe/guia', icon: 'help' },
+    { key: 'guide', label: 'Guia', href: '/equipe/guia', icon: 'help' },
     {
-      key: 'agendas',
+      key: 'schedules',
       label: staff.role === 'owner' ? 'Agendas' : 'Minha agenda',
       href: staff.role === 'owner' ? '/equipe' : `/agenda/${staff.id}`,
       icon: 'calendar_month',
     },
-    { key: 'pedidos', label: 'Pedidos', href: `/pendentes/${staff.id}`, icon: 'pending_actions' },
-    { key: 'horarios', label: 'Horários', href: '/horarios', icon: 'schedule' },
+    { key: 'requests', label: 'Pedidos', href: `/pendentes/${staff.id}`, icon: 'pending_actions' },
+    { key: 'availability', label: 'Horários', href: '/horarios', icon: 'schedule' },
     {
-      key: 'jornada',
+      key: 'workweek',
       label: 'Jornada',
       href: '/equipe/jornada',
       icon: 'event_repeat',
       ownerOnly: true,
     },
     {
-      key: 'servicos',
+      key: 'services',
       label: 'Serviços',
       href: '/servicos',
       icon: 'content_cut',
       ownerOnly: true,
     },
-    { key: 'clientes', label: 'Clientes', href: '/clientes', icon: 'group', ownerOnly: true },
+    { key: 'customers', label: 'Clientes', href: '/clientes', icon: 'group', ownerOnly: true },
     {
-      key: 'pessoas',
+      key: 'people',
       label: 'Equipe',
       href: '/equipe/pessoas',
       icon: 'badge',
       ownerOnly: true,
     },
     {
-      key: 'acessos',
+      key: 'access',
       label: 'Acessos',
       href: '/equipe/acessos',
       icon: 'shield_person',
       ownerOnly: true,
     },
     {
-      key: 'aparencia',
+      key: 'appearance',
       label: 'Aparência',
       href: '/equipe/aparencia',
       icon: 'palette',
@@ -164,7 +164,7 @@ export const StaffLayout: FC<Props> = ({
             cada rota precisar lembrar de passar. */}
             {/* O aviso é do dono, que é quem resolve, e conta só o que impede o
             cliente de marcar: convite não aceito não vira tarja permanente. */}
-            {staff.role === 'owner' && active !== 'guia' && blocking > 0 ? (
+            {staff.role === 'owner' && active !== 'guide' && blocking > 0 ? (
               <p class="notice">
                 <Icon name="help" />
                 <span>

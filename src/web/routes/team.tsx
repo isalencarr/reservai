@@ -24,20 +24,20 @@ import {
   supportEntryOf,
 } from '../staff.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
-import { Acessos } from '../views/acessos.tsx'
-import { Aparencia } from '../views/aparencia.tsx'
-import { EntrarEquipe, type EntrarEquipeProps, Painel } from '../views/equipe.tsx'
-import { Guia } from '../views/guia.tsx'
-import { Jornada, type JornadaProps } from '../views/jornada.tsx'
+import { AccessLog } from '../views/access-log.tsx'
+import { Appearance } from '../views/appearance.tsx'
+import { Guide } from '../views/guide.tsx'
 import { Layout } from '../views/layout.tsx'
-import { Pessoas, type PessoasProps } from '../views/pessoas.tsx'
+import { People, type PeopleProps } from '../views/people.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
+import { StaffLogin, type StaffLoginProps, TeamPanel } from '../views/team.tsx'
+import { Workweek, type WorkweekProps } from '../views/workweek.tsx'
 
 function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/equipe'
 }
 
-export function equipeRoutes({ db, auth }: Deps) {
+export function teamRoutes({ db, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const companyRepo = createCompanyRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
@@ -45,13 +45,13 @@ export function equipeRoutes({ db, auth }: Deps) {
   const app = new Hono<TenantEnv>()
   app.use('*', requireArea('staff'))
 
-  const render = (c: Context<TenantEnv>, props: EntrarEquipeProps, status = 200) =>
+  const render = (c: Context<TenantEnv>, props: StaffLoginProps, status = 200) =>
     c.html(
       c.req.header('HX-Request') ? (
-        <EntrarEquipe {...props} />
+        <StaffLogin {...props} />
       ) : (
         <Layout title="Entrar" company={c.get('company')}>
-          <EntrarEquipe {...props} />
+          <StaffLogin {...props} />
         </Layout>
       ),
       status as 200,
@@ -104,8 +104,8 @@ export function equipeRoutes({ db, auth }: Deps) {
     if (staff.role !== 'owner') return c.redirect(`/agenda/${staff.id}`, 303)
 
     return c.html(
-      <StaffLayout title="Agendas" active="agendas" {...layoutProps(c)}>
-        <Painel
+      <StaffLayout title="Agendas" active="schedules" {...layoutProps(c)}>
+        <TeamPanel
           staff={staff}
           providers={await providerRepo.listByCompany(company.id)}
           pending={await appointmentRepo.countPendingByProvider(company.id)}
@@ -170,7 +170,7 @@ export function equipeRoutes({ db, auth }: Deps) {
   ) {
     const company = c.get('company')
     const items = await providerRepo.listAll(company.id)
-    const view: PessoasProps = {
+    const view: PeopleProps = {
       items,
       me: c.get('staff'),
       editing: items.find((p) => p.id === options.editingId),
@@ -178,10 +178,10 @@ export function equipeRoutes({ db, auth }: Deps) {
     }
     return c.html(
       c.req.header('HX-Request') ? (
-        <Pessoas {...view} />
+        <People {...view} />
       ) : (
-        <StaffLayout title="Equipe" active="pessoas" {...layoutProps(c)}>
-          <Pessoas {...view} />
+        <StaffLayout title="Equipe" active="people" {...layoutProps(c)}>
+          <People {...view} />
         </StaffLayout>
       ),
       status as 200,
@@ -299,8 +299,8 @@ export function equipeRoutes({ db, auth }: Deps) {
   acessos.get('/', async (c) => {
     const company = c.get('company')
     return c.html(
-      <StaffLayout title="Acessos" active="acessos" {...layoutProps(c)}>
-        <Acessos items={await eventRepo.listRecent(company.id)} timeZone={company.timezone} />
+      <StaffLayout title="Acessos" active="access" {...layoutProps(c)}>
+        <AccessLog items={await eventRepo.listRecent(company.id)} timeZone={company.timezone} />
       </StaffLayout>,
     )
   })
@@ -311,8 +311,8 @@ export function equipeRoutes({ db, auth }: Deps) {
   guia.use('*', staffMiddleware(auth, db))
   guia.get('/', (c) =>
     c.html(
-      <StaffLayout title="Guia" active="guia" {...layoutProps(c)}>
-        <Guia company={c.get('company')} staff={c.get('staff')} steps={c.get('setupSteps')} />
+      <StaffLayout title="Guia" active="guide" {...layoutProps(c)}>
+        <Guide company={c.get('company')} staff={c.get('staff')} steps={c.get('setupSteps')} />
       </StaffLayout>,
     ),
   )
@@ -340,7 +340,7 @@ export function equipeRoutes({ db, auth }: Deps) {
       }),
     )
 
-    const view: JornadaProps = {
+    const view: WorkweekProps = {
       items: semanas,
       pessoa,
       ranges: await providerRepo.hoursFor(pessoa.id),
@@ -350,10 +350,10 @@ export function equipeRoutes({ db, auth }: Deps) {
 
     return c.html(
       c.req.header('HX-Request') ? (
-        <Jornada {...view} />
+        <Workweek {...view} />
       ) : (
-        <StaffLayout title="Jornada" active="jornada" {...layoutProps(c)}>
-          <Jornada {...view} />
+        <StaffLayout title="Jornada" active="workweek" {...layoutProps(c)}>
+          <Workweek {...view} />
         </StaffLayout>
       ),
       status as 200,
@@ -411,8 +411,8 @@ export function equipeRoutes({ db, auth }: Deps) {
   aparencia.get('/', (c) => {
     const company = c.get('company')
     return c.html(
-      <StaffLayout title="Aparência" active="aparencia" {...layoutProps(c)}>
-        <Aparencia company={company} />
+      <StaffLayout title="Aparência" active="appearance" {...layoutProps(c)}>
+        <Appearance company={company} />
       </StaffLayout>,
     )
   })

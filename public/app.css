@@ -756,7 +756,7 @@ header.app .wrap .signout {
 
 /* --- guia: o passo a passo da montagem e um cartão por assunto --- */
 
-#guia .intro {
+#guide .intro {
   margin: 0 0 16px;
 }
 
@@ -861,27 +861,27 @@ header.app .wrap .signout {
   text-decoration: none;
 }
 
-#guia .card {
+#guide .card {
   display: grid;
   gap: 8px;
 }
 
-#guia .card + .card {
+#guide .card + .card {
   margin-top: 16px;
 }
 
-#guia .card strong {
+#guide .card strong {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 1rem;
 }
 
-#guia .card p {
+#guide .card p {
   margin: 0;
 }
 
-#guia .card .link {
+#guide .card .link {
   display: inline-flex;
   align-items: center;
   gap: 4px;

@@ -9,19 +9,19 @@ import { createAuthEventRepo } from '../repos/auth-events.ts'
 import { createCompanyRepo } from '../repos/companies.ts'
 import { backofficeApp } from './backoffice/app.tsx'
 import { isBackofficeHost } from './backoffice/host.ts'
-import { agendaRoutes } from './routes/agenda.tsx'
-import { clientesRoutes } from './routes/clientes.tsx'
-import { entrarRoutes } from './routes/entrar.tsx'
-import { equipeRoutes } from './routes/equipe.tsx'
-import { horariosRoutes } from './routes/horarios.tsx'
-import { pendentesRoutes } from './routes/pendentes.tsx'
-import { reservaRoutes } from './routes/reserva.tsx'
-import { servicosRoutes } from './routes/servicos.tsx'
+import { availabilityRoutes } from './routes/availability.tsx'
+import { bookingRoutes } from './routes/booking.tsx'
+import { customerRoutes } from './routes/customers.tsx'
+import { loginRoutes } from './routes/login.tsx'
+import { pendingRoutes } from './routes/pending.tsx'
+import { scheduleRoutes } from './routes/schedule.tsx'
+import { serviceRoutes } from './routes/services.tsx'
+import { teamRoutes } from './routes/team.tsx'
 import { staffAccessOf } from './staff.ts'
 import { requireArea, type TenantEnv, tenantMiddleware } from './tenant.ts'
 import { Icon } from './views/icon.tsx'
-import { Indisponivel } from './views/indisponivel.tsx'
 import { Layout } from './views/layout.tsx'
+import { Unavailable } from './views/unavailable.tsx'
 
 const ASSETS: Record<string, { path: string; type: string }> = {
   'app.css': { path: 'public/app.css', type: 'text/css; charset=utf-8' },
@@ -79,7 +79,7 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
     if (company.status === 'suspended') {
       return c.html(
         <Layout title="Início" company={company}>
-          <Indisponivel />
+          <Unavailable />
         </Layout>,
       )
     }
@@ -124,14 +124,14 @@ export function createApp(db: Db, notifier: Notifier = createLogNotifier(), auth
   })
   app.route('/api/auth', authRoutes)
 
-  app.route('/agenda', agendaRoutes(deps))
-  app.route('/horarios', horariosRoutes(deps))
-  app.route('/pendentes', pendentesRoutes(deps))
-  app.route('/servicos', servicosRoutes(deps))
-  app.route('/equipe', equipeRoutes(deps))
-  app.route('/clientes', clientesRoutes(deps))
-  app.route('/entrar', entrarRoutes(db, notifier))
-  app.route('/reserva', reservaRoutes(db, notifier))
+  app.route('/agenda', scheduleRoutes(deps))
+  app.route('/horarios', availabilityRoutes(deps))
+  app.route('/pendentes', pendingRoutes(deps))
+  app.route('/servicos', serviceRoutes(deps))
+  app.route('/equipe', teamRoutes(deps))
+  app.route('/clientes', customerRoutes(deps))
+  app.route('/entrar', loginRoutes(db, notifier))
+  app.route('/reserva', bookingRoutes(db, notifier))
 
   return app
 }

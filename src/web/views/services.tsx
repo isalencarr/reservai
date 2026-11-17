@@ -5,7 +5,7 @@ import { Icon } from './icon.tsx'
 
 export type ServiceRow = { service: Service; providerIds: string[] }
 
-export type ServicosProps = {
+export type ServicesProps = {
   items: ServiceRow[]
   providers: Provider[]
   editing?: ServiceRow
@@ -97,7 +97,7 @@ const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = (
   </div>
 )
 
-export const Servicos: FC<ServicosProps> = ({ items, providers, editing, error }) => (
+export const Services: FC<ServicesProps> = ({ items, providers, editing, error }) => (
   <section id="catalogo" hx-target="#catalogo" hx-swap="outerHTML">
     <h2>Catálogo</h2>
 

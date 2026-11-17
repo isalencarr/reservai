@@ -17,9 +17,9 @@ import { createSubscriptionRepo } from '../../repos/subscriptions.ts'
 import { createSupportSessionRepo } from '../../repos/support-sessions.ts'
 import type { Deps } from '../deps.ts'
 import { type PlatformEnv, platformAdminMiddleware } from './admin.ts'
-import { EntrarBackoffice, type EntrarProps } from './views/entrar.tsx'
+import { Companies, type CompaniesProps } from './views/companies.tsx'
 import { BackofficeLayout } from './views/layout.tsx'
-import { Saloes, type SaloesProps } from './views/saloes.tsx'
+import { BackofficeLogin, type EntrarProps } from './views/login.tsx'
 
 function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
@@ -78,10 +78,10 @@ export function backofficeApp({ db, auth }: Deps) {
   const renderLogin = (c: Context<PlatformEnv>, props: EntrarProps, status = 200) =>
     c.html(
       c.req.header('HX-Request') ? (
-        <EntrarBackoffice {...props} />
+        <BackofficeLogin {...props} />
       ) : (
         <BackofficeLayout title="Entrar">
-          <EntrarBackoffice {...props} />
+          <BackofficeLogin {...props} />
         </BackofficeLayout>
       ),
       status as 200,
@@ -138,12 +138,12 @@ export function backofficeApp({ db, auth }: Deps) {
     }
   }
 
-  const renderPanel = (c: Context<PlatformEnv>, view: SaloesProps, status = 200) => {
+  const renderPanel = (c: Context<PlatformEnv>, view: CompaniesProps, status = 200) => {
     const html = c.req.header('HX-Request') ? (
-      <Saloes {...view} />
+      <Companies {...view} />
     ) : (
-      <BackofficeLayout title="Salões" admin={c.get('admin')} active="saloes">
-        <Saloes {...view} />
+      <BackofficeLayout title="Salões" admin={c.get('admin')} active="companies">
+        <Companies {...view} />
       </BackofficeLayout>
     )
     return c.html(html, status as 200)

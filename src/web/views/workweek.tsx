@@ -4,10 +4,10 @@ import { formatMinute } from '../../domain/time.ts'
 import { dayRanges, WEEKDAY_NAMES, type WorkRange } from '../../domain/workday.ts'
 import { Icon } from './icon.tsx'
 
-export type JornadaItem = { pessoa: Provider; dias: number }
+export type WorkweekItem = { pessoa: Provider; dias: number }
 
-export type JornadaProps = {
-  items: JornadaItem[]
+export type WorkweekProps = {
+  items: WorkweekItem[]
   pessoa: Provider
   ranges: WorkRange[]
   error?: string
@@ -61,7 +61,7 @@ const Dia: FC<{ weekday: number; nome: string; ranges: WorkRange[] }> = ({
 
 /** Uma pessoa por vez: a jornada é a semana inteira dela, e sete dias de duas
  * pessoas na mesma tela ninguém lê no celular. */
-export const Jornada: FC<JornadaProps> = ({ items, pessoa, ranges, error, saved }) => (
+export const Workweek: FC<WorkweekProps> = ({ items, pessoa, ranges, error, saved }) => (
   <section id="jornada" hx-target="#jornada" hx-swap="outerHTML">
     <h2>Jornada</h2>
     <p class="muted">

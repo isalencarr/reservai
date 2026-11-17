@@ -4,7 +4,7 @@ import { formatWhen } from '../../domain/time.ts'
 import type { PendingEntry } from '../../repos/appointments.ts'
 import { Icon } from './icon.tsx'
 
-export type PendentesProps = {
+export type PendingProps = {
   providerId: string
   providerName: string
   timeZone: string
@@ -21,13 +21,7 @@ function restante(deadline: Date | null, now: Date): string {
   return `responda em ${hours}h${minutes % 60 ? ` ${minutes % 60}min` : ''}`
 }
 
-export const Pendentes: FC<PendentesProps> = ({
-  providerId,
-  providerName,
-  timeZone,
-  now,
-  items,
-}) => (
+export const Pending: FC<PendingProps> = ({ providerId, providerName, timeZone, now, items }) => (
   <section id="fila" hx-target="#fila" hx-swap="outerHTML">
     <div class="hero">
       <Icon name="pending_actions" class="hero-icon" />

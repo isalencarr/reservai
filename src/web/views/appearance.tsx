@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { Company } from '../../db/schema.ts'
 import { PALETTES, type ThemeMode } from '../../domain/theme.ts'
 
-export type AparenciaProps = { company: Company }
+export type AppearanceProps = { company: Company }
 
 const MODES: { value: ThemeMode; label: string; hint: string }[] = [
   { value: 'auto', label: 'Automático', hint: 'segue o aparelho de quem acessa' },
@@ -12,7 +12,7 @@ const MODES: { value: ThemeMode; label: string; hint: string }[] = [
 
 /** Sem HTMX de propósito: a cor vive no cabeçalho da página, então trocar o tema
  * precisa recarregar para a tela já aparecer com a paleta nova. */
-export const Aparencia: FC<AparenciaProps> = ({ company }) => (
+export const Appearance: FC<AppearanceProps> = ({ company }) => (
   <section id="aparencia">
     <h2>Aparência</h2>
     <p class="muted">

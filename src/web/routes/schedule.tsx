@@ -6,7 +6,7 @@ import { createProviderRepo } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
 import { canManage, layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { DayView, type DayViewProps } from '../views/agenda.tsx'
+import { DayView, type DayViewProps } from '../views/day-view.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -21,7 +21,7 @@ function readInstant(raw: unknown): Date | undefined {
   return Number.isNaN(value.getTime()) ? undefined : value
 }
 
-export function agendaRoutes({ db, notifier, auth }: Deps) {
+export function scheduleRoutes({ db, notifier, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
@@ -63,7 +63,7 @@ export function agendaRoutes({ db, notifier, auth }: Deps) {
       : c.html(
           <StaffLayout
             title={`Agenda de ${props.providerName}`}
-            active="agendas"
+            active="schedules"
             {...layoutProps(c)}
           >
             <DayView {...props} />

@@ -19,9 +19,9 @@ import { createProviderRepo } from '../../repos/providers.ts'
 import { createServiceRepo } from '../../repos/services.ts'
 import { readCustomerId } from '../customer-session.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
-import { Indisponivel } from '../views/indisponivel.tsx'
+import { Booking, type BookingProps, MyBookings, type MyBookingsProps } from '../views/booking.tsx'
 import { Layout } from '../views/layout.tsx'
-import { Meus, type MeusProps, Reserva, type ReservaProps } from '../views/reserva.tsx'
+import { Unavailable } from '../views/unavailable.tsx'
 
 const DAYS_AHEAD = 14
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -35,7 +35,7 @@ function dayOptions(from: LocalDate) {
   })
 }
 
-export function reservaRoutes(db: Db, notifier: Notifier) {
+export function bookingRoutes(db: Db, notifier: Notifier) {
   const serviceRepo = createServiceRepo(db)
   const providerRepo = createProviderRepo(db)
   const customerRepo = createCustomerRepo(db)
@@ -86,13 +86,13 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
     })
   }
 
-  const render = (c: Context<CustomerEnv>, view: ReservaProps) =>
+  const render = (c: Context<CustomerEnv>, view: BookingProps) =>
     c.html(
       c.req.header('HX-Request') ? (
-        <Reserva {...view} />
+        <Booking {...view} />
       ) : (
         <Layout title="Agendar" company={c.get('company')}>
-          <Reserva {...view} />
+          <Booking {...view} />
         </Layout>
       ),
     )
@@ -106,7 +106,7 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
     if (suspenso(c)) {
       return c.html(
         <Layout title="Agendar" company={company}>
-          <Indisponivel />
+          <Unavailable />
         </Layout>,
       )
     }
@@ -153,7 +153,7 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
     const customer = await customerRepo.findById(company.id, c.get('customerId'))
     if (!customer) return c.redirect('/entrar', 303)
 
-    const view: MeusProps = {
+    const view: MyBookingsProps = {
       customerName: customer.name,
       timeZone: company.timezone,
       now: new Date(),
@@ -162,10 +162,10 @@ export function reservaRoutes(db: Db, notifier: Notifier) {
     }
     return c.html(
       c.req.header('HX-Request') ? (
-        <Meus {...view} />
+        <MyBookings {...view} />
       ) : (
         <Layout title="Meus horários" company={company}>
-          <Meus {...view} />
+          <MyBookings {...view} />
         </Layout>
       ),
       status as 200,

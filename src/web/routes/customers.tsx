@@ -10,10 +10,10 @@ import {
   staffMiddleware,
 } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { Clientes, type ClientesProps } from '../views/clientes.tsx'
+import { Customers, type CustomersProps } from '../views/customers.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 
-export function clientesRoutes({ db, auth }: Deps) {
+export function customerRoutes({ db, auth }: Deps) {
   const customerRepo = createCustomerRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
@@ -34,13 +34,13 @@ export function clientesRoutes({ db, auth }: Deps) {
       ? { customer, history: await appointmentRepo.listByCustomer(company.id, customer.id) }
       : undefined
 
-    const view: ClientesProps = { items, query, timeZone: company.timezone, viewing }
+    const view: CustomersProps = { items, query, timeZone: company.timezone, viewing }
     return c.html(
       c.req.header('HX-Request') ? (
-        <Clientes {...view} />
+        <Customers {...view} />
       ) : (
-        <StaffLayout title="Clientes" active="clientes" {...layoutProps(c)}>
-          <Clientes {...view} />
+        <StaffLayout title="Clientes" active="customers" {...layoutProps(c)}>
+          <Customers {...view} />
         </StaffLayout>
       ),
     )

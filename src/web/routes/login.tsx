@@ -7,7 +7,7 @@ import { createAccessCodeRepo } from '../../repos/access-codes.ts'
 import { createCustomerRepo } from '../../repos/customers.ts'
 import { setCustomerSession } from '../customer-session.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
-import { Entrar, type EntrarProps } from '../views/entrar.tsx'
+import { Entrar, type EntrarProps } from '../views/customer-login.tsx'
 import { Layout } from '../views/layout.tsx'
 
 /** Só caminhos internos: `next` vem do formulário e não pode virar redirecionamento
@@ -16,7 +16,7 @@ function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/reserva'
 }
 
-export function entrarRoutes(db: Db, notifier: Notifier) {
+export function loginRoutes(db: Db, notifier: Notifier) {
   const codeRepo = createAccessCodeRepo(db)
   const customerRepo = createCustomerRepo(db)
   const app = new Hono<TenantEnv>()

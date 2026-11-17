@@ -8,7 +8,7 @@ import { Icon } from './icon.tsx'
 
 export type DayOption = { date: LocalDate; label: string; weekday: string }
 
-export type ReservaProps = {
+export type BookingProps = {
   customerName: string
   timeZone: string
   services: Service[]
@@ -36,7 +36,7 @@ const Voltar: FC<{ href: string }> = ({ href }) => (
   </button>
 )
 
-export const Reserva: FC<ReservaProps> = (props) => {
+export const Booking: FC<BookingProps> = (props) => {
   const { services, service, providers, provider, days, date, starts, chosen, timeZone } = props
   const atual = step(service, provider, date, chosen)
   const base = `/reserva?servico=${service?.id ?? ''}`
@@ -190,7 +190,7 @@ const STATUS_LABEL: Record<CustomerEntry['status'], string> = {
   expired: 'sem resposta no prazo',
 }
 
-export type MeusProps = {
+export type MyBookingsProps = {
   customerName: string
   timeZone: string
   now: Date
@@ -198,7 +198,7 @@ export type MeusProps = {
   error?: string
 }
 
-export const Meus: FC<MeusProps> = ({ customerName, timeZone, now, items, error }) => (
+export const MyBookings: FC<MyBookingsProps> = ({ customerName, timeZone, now, items, error }) => (
   <section id="meus" hx-target="#meus" hx-swap="outerHTML">
     <div class="daybar">
       <div class="today">

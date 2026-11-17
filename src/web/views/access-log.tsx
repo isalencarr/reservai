@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { AuthEvent } from '../../db/schema.ts'
 import { formatWhen } from '../../domain/time.ts'
 
-export type AcessosProps = {
+export type AccessLogProps = {
   items: AuthEvent[]
   timeZone: string
 }
@@ -14,7 +14,7 @@ const LABEL: Record<AuthEvent['type'], string> = {
   support: 'suporte da plataforma',
 }
 
-export const Acessos: FC<AcessosProps> = ({ items, timeZone }) => (
+export const AccessLog: FC<AccessLogProps> = ({ items, timeZone }) => (
   <section id="acessos">
     <h2>Acessos</h2>
     <p class="muted">

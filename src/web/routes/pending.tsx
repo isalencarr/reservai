@@ -6,10 +6,10 @@ import { createProviderRepo } from '../../repos/providers.ts'
 import type { Deps } from '../deps.ts'
 import { canManage, layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { Pendentes, type PendentesProps } from '../views/pendentes.tsx'
+import { Pending, type PendingProps } from '../views/pending.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 
-export function pendentesRoutes({ db, notifier, auth }: Deps) {
+export function pendingRoutes({ db, notifier, auth }: Deps) {
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
   const app = new Hono<StaffEnv>()
@@ -20,7 +20,7 @@ export function pendentesRoutes({ db, notifier, auth }: Deps) {
     companyId: string,
     timeZone: string,
     providerId: string,
-  ): Promise<PendentesProps | undefined> {
+  ): Promise<PendingProps | undefined> {
     const provider = await providerRepo.findById(companyId, providerId)
     if (!provider) return undefined
     return {
@@ -32,12 +32,12 @@ export function pendentesRoutes({ db, notifier, auth }: Deps) {
     }
   }
 
-  const render = (c: Context<StaffEnv>, view: PendentesProps) =>
+  const render = (c: Context<StaffEnv>, view: PendingProps) =>
     c.req.header('HX-Request')
-      ? c.html(<Pendentes {...view} />)
+      ? c.html(<Pending {...view} />)
       : c.html(
-          <StaffLayout title="Pedidos" active="pedidos" {...layoutProps(c)}>
-            <Pendentes {...view} />
+          <StaffLayout title="Pedidos" active="requests" {...layoutProps(c)}>
+            <Pending {...view} />
           </StaffLayout>,
         )
 

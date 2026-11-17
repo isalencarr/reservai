@@ -3,7 +3,7 @@ import type { Provider } from '../../db/schema.ts'
 import { formatPhone } from '../../domain/phone.ts'
 import { Icon } from './icon.tsx'
 
-export type PessoasProps = {
+export type PeopleProps = {
   items: Provider[]
   me: Provider
   editing?: Provider
@@ -118,7 +118,7 @@ const Editar: FC<{ pessoa: Provider; me: Provider; error?: string }> = ({ pessoa
   </div>
 )
 
-export const Pessoas: FC<PessoasProps> = ({ items, me, editing, error }) => (
+export const People: FC<PeopleProps> = ({ items, me, editing, error }) => (
   <section id="pessoas" hx-target="#pessoas" hx-swap="outerHTML">
     <h2>Equipe</h2>
     <p class="muted">

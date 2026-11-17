@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
 import { Icon } from './icon.tsx'
 
-export type EntrarEquipeProps = {
+export type StaffLoginProps = {
   next: string
   error?: string
   /** Quando o pedido foi aceito, a tela só confirma o envio. */
@@ -11,7 +11,7 @@ export type EntrarEquipeProps = {
 
 /** A resposta é a mesma para e-mail da equipe e e-mail de fora: a tela não
  * confirma quem trabalha aqui. */
-export const EntrarEquipe: FC<EntrarEquipeProps> = ({ next, error, sentTo }) => (
+export const StaffLogin: FC<StaffLoginProps> = ({ next, error, sentTo }) => (
   <section id="entrar-equipe" hx-target="#entrar-equipe" hx-swap="outerHTML">
     <h2>Entrar</h2>
     {error ? <p class="error">{error}</p> : null}
@@ -43,14 +43,14 @@ export const EntrarEquipe: FC<EntrarEquipeProps> = ({ next, error, sentTo }) => 
   </section>
 )
 
-export type PainelProps = {
+export type TeamPanelProps = {
   staff: Provider
   providers: Provider[]
   /** Pedidos esperando resposta em cada agenda. */
   pending: Record<string, number>
 }
 
-export const Painel: FC<PainelProps> = ({ staff, providers, pending }) => (
+export const TeamPanel: FC<TeamPanelProps> = ({ staff, providers, pending }) => (
   <section id="painel">
     <div class="hero">
       <Icon name="calendar_month" class="hero-icon" />

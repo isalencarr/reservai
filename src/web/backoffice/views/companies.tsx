@@ -7,16 +7,16 @@ import { DEFAULT_TIMEZONE } from '../../../platform/companies.ts'
 import { STAFF_PREFIX } from '../../tenant.ts'
 import { Icon } from '../../views/icon.tsx'
 
-export type SalaoRow = {
+export type CompanyRow = {
   company: Company
   subscription?: Subscription
   /** Janela de suporte aberta agora, se houver. */
   support?: SupportSession
 }
 
-export type SaloesProps = {
-  items: SalaoRow[]
-  editing?: SalaoRow
+export type CompaniesProps = {
+  items: CompanyRow[]
+  editing?: CompanyRow
   error?: string
   now: Date
 }
@@ -42,7 +42,7 @@ const PLANOS: Subscription['plan'][] = ['mensal', 'anual']
 
 /** O que a lista precisa dizer de cada salão em uma linha: se está no ar e se
  * está pago. */
-function situacao({ company, subscription, support }: SalaoRow, now: Date): string {
+function situacao({ company, subscription, support }: CompanyRow, now: Date): string {
   const pago = paymentState(subscription?.paidUntil, now)
   const prazo = subscription?.paidUntil
     ? formatDayMonth(paidUntilDate(subscription.paidUntil, company.timezone))
@@ -65,7 +65,7 @@ function situacao({ company, subscription, support }: SalaoRow, now: Date): stri
 
 /** O suporte entra na área do salão, então o backoffice mostra a janela aberta
  * em vez de deixar o acesso invisível de onde foi concedido. */
-const BlocoSuporte: FC<{ row: SalaoRow }> = ({ row: { company, support } }) =>
+const BlocoSuporte: FC<{ row: CompanyRow }> = ({ row: { company, support } }) =>
   support ? (
     <form class="service-form" hx-post={`/suporte/${support.id}/encerrar`}>
       <p class="muted">
@@ -144,7 +144,7 @@ const Campos: FC<{ company?: Company }> = ({ company }) => (
 
 /** Assinatura e situação são formulários separados do de identidade: salvar o
  * pagamento não deve depender de o endereço estar preenchido certo. */
-const BlocoAssinatura: FC<{ row: SalaoRow }> = ({ row }) => {
+const BlocoAssinatura: FC<{ row: CompanyRow }> = ({ row }) => {
   const { company, subscription } = row
   const prazo = subscription?.paidUntil
     ? paidUntilDate(subscription.paidUntil, company.timezone)
@@ -192,7 +192,7 @@ const BlocoAssinatura: FC<{ row: SalaoRow }> = ({ row }) => {
   )
 }
 
-const BlocoSituacao: FC<{ row: SalaoRow }> = ({ row: { company } }) => {
+const BlocoSituacao: FC<{ row: CompanyRow }> = ({ row: { company } }) => {
   const suspenso = company.status === 'suspended'
   return (
     <form class="service-form" hx-post={`/saloes/${company.id}/situacao`}>
@@ -213,7 +213,7 @@ const BlocoSituacao: FC<{ row: SalaoRow }> = ({ row: { company } }) => {
 
 /** O modal é só marcação: abrir e fechar são navegações do HTMX sobre o mesmo
  * fragmento, então não existe estado de tela para sincronizar. */
-const Editar: FC<{ row: SalaoRow; error?: string }> = ({ row, error }) => (
+const Editar: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
   <div class="overlay">
     <button type="button" class="overlay-bg" hx-get="/" aria-label="Fechar" />
     <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${row.company.name}`}>
@@ -243,7 +243,7 @@ const Editar: FC<{ row: SalaoRow; error?: string }> = ({ row, error }) => (
   </div>
 )
 
-export const Saloes: FC<SaloesProps> = ({ items, editing, error, now }) => (
+export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) => (
   <section id="saloes" hx-target="#saloes" hx-swap="outerHTML">
     <h2>Salões</h2>
 

@@ -2,7 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { Provider, Service } from '../../db/schema.ts'
 import { formatLongDate, formatTime, type LocalDate } from '../../domain/time.ts'
 
-export type HorariosProps = {
+export type AvailabilityProps = {
   services: Service[]
   providers: Provider[]
   service?: Service
@@ -17,7 +17,7 @@ const money = (cents: number | null) =>
 
 /** Fragmento único: trocar serviço muda a lista de profissionais, então o
  * formulário e o resultado vão e voltam juntos. */
-export const Horarios: FC<HorariosProps> = ({
+export const Availability: FC<AvailabilityProps> = ({
   services,
   providers,
   service,

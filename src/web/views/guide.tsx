@@ -4,7 +4,7 @@ import type { SetupStep, SetupStepState } from '../../domain/setup.ts'
 import { STAFF_PREFIX } from '../tenant.ts'
 import { Icon } from './icon.tsx'
 
-export type GuiaProps = {
+export type GuideProps = {
   company: Company
   staff: Provider
   steps: SetupStep[]
@@ -163,12 +163,12 @@ const Steps: FC<{ steps: SetupStep[]; company: Company }> = ({ steps, company })
   </ol>
 )
 
-export const Guia: FC<GuiaProps> = ({ company, staff, steps }) => {
+export const Guide: FC<GuideProps> = ({ company, staff, steps }) => {
   const isOwner = staff.role === 'owner'
   const sections = sectionsFor(staff).filter((section) => isOwner || !section.ownerOnly)
 
   return (
-    <section id="guia">
+    <section id="guide">
       <h2>Guia</h2>
 
       {isOwner ? (

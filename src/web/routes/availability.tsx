@@ -8,7 +8,7 @@ import { createServiceRepo } from '../../repos/services.ts'
 import type { Deps } from '../deps.ts'
 import { layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { Horarios, type HorariosProps } from '../views/horarios.tsx'
+import { Availability, type AvailabilityProps } from '../views/availability.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -17,7 +17,7 @@ function readDate(raw: string | undefined, timeZone: string): LocalDate {
   return raw && DATE_PATTERN.test(raw) ? raw : localDate(new Date(), timeZone)
 }
 
-export function horariosRoutes({ db, auth }: Deps) {
+export function availabilityRoutes({ db, auth }: Deps) {
   const serviceRepo = createServiceRepo(db)
   const providerRepo = createProviderRepo(db)
   const appointmentRepo = createAppointmentRepo(db)
@@ -55,13 +55,21 @@ export function horariosRoutes({ db, auth }: Deps) {
       })
     }
 
-    const props: HorariosProps = { services, providers, service, provider, date, timeZone, starts }
+    const props: AvailabilityProps = {
+      services,
+      providers,
+      service,
+      provider,
+      date,
+      timeZone,
+      starts,
+    }
 
     return c.req.header('HX-Request')
-      ? c.html(<Horarios {...props} />)
+      ? c.html(<Availability {...props} />)
       : c.html(
-          <StaffLayout title="Horários" active="horarios" {...layoutProps(c)}>
-            <Horarios {...props} />
+          <StaffLayout title="Horários" active="availability" {...layoutProps(c)}>
+            <Availability {...props} />
           </StaffLayout>,
         )
   })

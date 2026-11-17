@@ -3,7 +3,7 @@ import { Icon } from './icon.tsx'
 
 /** Salão suspenso para o cliente: não dá para pedir horário novo, mas o que já
  * estava confirmado continua valendo e visível. */
-export const Indisponivel: FC = () => (
+export const Unavailable: FC = () => (
   <section id="indisponivel">
     <div class="hero">
       <Icon name="event_busy" class="hero-icon" />

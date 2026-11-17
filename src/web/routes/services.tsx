@@ -5,7 +5,7 @@ import { createServiceRepo, type ServiceInput } from '../../repos/services.ts'
 import type { Deps } from '../deps.ts'
 import { layoutProps, requireOwner, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
-import { Servicos, type ServicosProps } from '../views/servicos.tsx'
+import { Services, type ServicesProps } from '../views/services.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 
 const MIN_DURATION = 5
@@ -35,7 +35,7 @@ function readForm(body: Record<string, unknown>): ParsedForm {
   return { input: { name, durationMinutes, priceCents }, providerIds }
 }
 
-export function servicosRoutes({ db, auth }: Deps) {
+export function serviceRoutes({ db, auth }: Deps) {
   const serviceRepo = createServiceRepo(db)
   const providerRepo = createProviderRepo(db)
   const app = new Hono<StaffEnv>()
@@ -46,7 +46,7 @@ export function servicosRoutes({ db, auth }: Deps) {
   async function props(
     companyId: string,
     options: { error?: string; editingId?: string } = {},
-  ): Promise<ServicosProps> {
+  ): Promise<ServicesProps> {
     const all = await serviceRepo.listAll(companyId)
     const items = await Promise.all(
       all.map(async (service) => ({
@@ -62,12 +62,12 @@ export function servicosRoutes({ db, auth }: Deps) {
     }
   }
 
-  const render = (c: Context<StaffEnv>, view: ServicosProps, status = 200) => {
+  const render = (c: Context<StaffEnv>, view: ServicesProps, status = 200) => {
     const html = c.req.header('HX-Request') ? (
-      <Servicos {...view} />
+      <Services {...view} />
     ) : (
-      <StaffLayout title="Serviços" active="servicos" {...layoutProps(c)}>
-        <Servicos {...view} />
+      <StaffLayout title="Serviços" active="services" {...layoutProps(c)}>
+        <Services {...view} />
       </StaffLayout>
     )
     return c.html(html, status as 200)

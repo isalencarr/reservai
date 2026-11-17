@@ -3,11 +3,11 @@ import type { PlatformAdmin } from '../../../db/schema.ts'
 import { themeCss } from '../../../domain/theme.ts'
 import { Icon } from '../../views/icon.tsx'
 
-export type BackofficeSection = 'saloes'
+export type BackofficeSection = 'companies'
 
 type Item = { key: BackofficeSection; label: string; href: string; icon: string }
 
-const ITEMS: Item[] = [{ key: 'saloes', label: 'Salões', href: '/', icon: 'storefront' }]
+const ITEMS: Item[] = [{ key: 'companies', label: 'Salões', href: '/', icon: 'storefront' }]
 
 /** Cor fixa e diferente da que os salões usam por padrão: é o que te diz, de
  * olho, que a tela aberta é a da plataforma e não a de um cliente. */
