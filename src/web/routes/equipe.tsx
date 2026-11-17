@@ -312,7 +312,7 @@ export function equipeRoutes({ db, auth }: Deps) {
   guia.get('/', (c) =>
     c.html(
       <StaffLayout title="Guia" active="guia" {...layoutProps(c)}>
-        <Guia company={c.get('company')} staff={c.get('staff')} pendencias={c.get('pendencias')} />
+        <Guia company={c.get('company')} staff={c.get('staff')} steps={c.get('setupSteps')} />
       </StaffLayout>,
     ),
   )

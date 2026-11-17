@@ -2,7 +2,12 @@ import type { Context, MiddlewareHandler } from 'hono'
 import type { Auth } from '../auth/config.ts'
 import type { Db } from '../db/client.ts'
 import type { Provider, SupportSession } from '../db/schema.ts'
-import { type Pendencia, pendenciasDeSetup } from '../domain/setup.ts'
+import {
+  listSetupIssues,
+  listSetupSteps,
+  type SetupIssue,
+  type SetupStep,
+} from '../domain/setup.ts'
 import { createPlatformAdminRepo } from '../repos/platform-admins.ts'
 import { createProviderRepo } from '../repos/providers.ts'
 import { createSetupRepo } from '../repos/setup.ts'
@@ -13,7 +18,8 @@ export type StaffEnv = TenantEnv & {
   Variables: TenantEnv['Variables'] & {
     staff: Provider
     support: SupportSession | undefined
-    pendencias: Pendencia[]
+    setupIssues: SetupIssue[]
+    setupSteps: SetupStep[]
   }
 }
 
@@ -101,9 +107,10 @@ export function staffMiddleware(auth: Auth, db: Db): MiddlewareHandler<StaffEnv>
 
     // O aviso do que falta configurar aparece em toda tela interna, então é
     // calculado aqui e não em cada rota. Em escrita ninguém mostra aviso.
-    const dados =
+    const setup =
       c.req.method === 'GET' ? await createSetupRepo(db).dataFor(c.get('company').id) : undefined
-    c.set('pendencias', dados ? pendenciasDeSetup(dados) : [])
+    c.set('setupIssues', setup ? listSetupIssues(setup) : [])
+    c.set('setupSteps', setup ? listSetupSteps(setup) : [])
 
     await next()
   }
@@ -142,6 +149,6 @@ export function layoutProps(c: Context<StaffEnv>) {
     company: c.get('company'),
     staff: c.get('staff'),
     support: c.get('support'),
-    pendencias: c.get('pendencias'),
+    setupIssues: c.get('setupIssues'),
   }
 }

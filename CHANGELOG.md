@@ -3,6 +3,23 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 3.2 — Passo a passo da montagem — 2026-11-17
+
+- O guia deixou de listar só o que falta e passou a mostrar o caminho inteiro,
+  em cinco passos numerados: serviços, equipe, quem executa cada serviço,
+  jornada e divulgar o endereço. Quem está montando o salão vê onde está.
+- O passo já cumprido continua à vista, com o que existe hoje ("4 serviços
+  ativos"), e o passo que ainda depende do de cima aparece apagado, sem link:
+  antes a lista não dizia a ordem, e descobrir que serviço vem antes de jornada
+  custava uma volta pelo app.
+- Convidar a equipe é o único passo opcional: quem atende sozinho segue em
+  frente. Convite não aceito virou nota desse passo.
+- O endereço para divulgar saiu do cartão solto e virou o último passo, que só
+  chega a sua vez quando o resto está pronto.
+- O aviso do topo continua igual, contando só o que impede o cliente de marcar.
+- `bun run db:reset` deixava os arquivos `-wal` e `-shm` para trás, e o banco
+  recriado subia com erro de I/O. Agora apaga os três.
+
 ## 3.1 — Jornada de quem atende — 2026-11-16
 
 - Tela nova em `/equipe/jornada`, só do dono: a semana de cada pessoa, sete dias

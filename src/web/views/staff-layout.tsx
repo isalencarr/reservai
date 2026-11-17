@@ -1,6 +1,6 @@
 import type { FC, PropsWithChildren } from 'hono/jsx'
 import type { Company, Provider, SupportSession } from '../../db/schema.ts'
-import type { Pendencia } from '../../domain/setup.ts'
+import type { SetupIssue } from '../../domain/setup.ts'
 import { themeCss } from '../../domain/theme.ts'
 import { formatTime } from '../../domain/time.ts'
 import { Icon } from './icon.tsx'
@@ -91,7 +91,7 @@ type Props = PropsWithChildren<{
   staff: Provider
   active: StaffSection
   /** O que falta configurar. Vira aviso no topo enquanto houver item. */
-  pendencias?: Pendencia[]
+  setupIssues?: SetupIssue[]
   /** Presente quando quem está vendo é o suporte da plataforma, não a equipe. */
   support?: SupportSession | undefined
 }>
@@ -104,10 +104,10 @@ export const StaffLayout: FC<Props> = ({
   staff,
   active,
   support,
-  pendencias,
+  setupIssues,
   children,
 }) => {
-  const bloqueios = (pendencias ?? []).filter((p) => p.bloqueia).length
+  const blocking = (setupIssues ?? []).filter((issue) => issue.blocking).length
 
   return (
     <html lang="pt-BR">
@@ -164,11 +164,11 @@ export const StaffLayout: FC<Props> = ({
             cada rota precisar lembrar de passar. */}
             {/* O aviso é do dono, que é quem resolve, e conta só o que impede o
             cliente de marcar: convite não aceito não vira tarja permanente. */}
-            {staff.role === 'owner' && active !== 'guia' && bloqueios > 0 ? (
+            {staff.role === 'owner' && active !== 'guia' && blocking > 0 ? (
               <p class="notice">
                 <Icon name="help" />
                 <span>
-                  Falta configurar {bloqueios} {bloqueios === 1 ? 'coisa' : 'coisas'} antes de
+                  Falta configurar {blocking} {blocking === 1 ? 'coisa' : 'coisas'} antes de
                   divulgar o endereço.
                 </span>
                 <a href="/equipe/guia">Ver no guia</a>

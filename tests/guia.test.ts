@@ -78,7 +78,7 @@ describe('aviso de pendência', () => {
 
     const html = await res.text()
     expect(html).not.toContain('Falta configurar')
-    expect(html).toContain('O que falta configurar')
+    expect(html).toContain('Montar o salão')
   })
 
   it('quem atende não vê o aviso: não é ele que resolve', async () => {
@@ -92,14 +92,16 @@ describe('aviso de pendência', () => {
 })
 
 describe('página do guia', () => {
-  it('lista o que falta, com link para a tela que resolve', async () => {
+  it('abre o passo a passo no passo da vez, com link para a tela', async () => {
     const s = await salaoNovo()
     const res = await s.app.request('/equipe/guia', { headers: s.headers })
 
     const html = await res.text()
-    expect(html).toContain('Cadastre o primeiro serviço')
+    expect(html).toContain('Cadastre os serviços')
     expect(html).toContain('/servicos')
-    expect(html).not.toContain('Pronto para divulgar')
+    expect(html).toContain('<span class="tag">agora</span>')
+    // Salão vazio ainda não divulga nada: o endereço não aparece.
+    expect(html).not.toContain('Mande este endereço')
   })
 
   it('mostra o endereço para divulgar quando está tudo pronto', async () => {
@@ -108,7 +110,8 @@ describe('página do guia', () => {
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
-    expect(html).toContain('Pronto para divulgar')
+    expect(html).toContain('Divulgue o endereço')
+    expect(html).toContain('Mande este endereço')
     expect(html).toContain('beleza-pura.localhost')
   })
 
@@ -123,6 +126,16 @@ describe('página do guia', () => {
     expect(html).toContain('/equipe/jornada')
   })
 
+  it('quem atende não vê o passo a passo: montar o salão é do dono', async () => {
+    const s = await setup()
+    const headers = await s.como(s.rafa.email ?? '')
+
+    const res = await s.app.request('/equipe/guia', { headers })
+    const html = await res.text()
+    expect(html).not.toContain('Montar o salão')
+    expect(html).not.toContain('Cadastre os serviços')
+  })
+
   it('explica o app para quem atende, sem as telas do dono', async () => {
     const s = await setup()
     const headers = await s.como(s.rafa.email ?? '')
@@ -132,7 +145,6 @@ describe('página do guia', () => {
     expect(res.status).toBe(200)
     expect(html).toContain('Como o cliente marca')
     expect(html).toContain('Minha agenda')
-    expect(html).not.toContain('O que falta configurar')
     expect(html).not.toContain('Carteira é do salão')
   })
 

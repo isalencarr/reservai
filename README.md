@@ -174,7 +174,8 @@ recebe o link na hora.
     `/equipe/acessos` do próprio salão.
 17. Salão novo nasce com o endereço no ar e vazio, então o app diz o que falta:
     serviço ativo, alguém marcado para executar cada serviço e jornada para quem
-    atende. O guia lista, e o aviso do topo só conta o que impede de marcar.
+    atende. O guia mostra isso como passo a passo, na ordem de montagem, e o
+    aviso do topo só conta o que impede de marcar.
 18. Quem administra a plataforma entra por um host próprio e está em
     `platform_admins`, lista criada na migração a partir do ambiente. Não existe
     cadastro aberto nessa porta, e a sessão de lá não abre a área de nenhum

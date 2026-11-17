@@ -1,5 +1,5 @@
 import type { Db } from '../db/client.ts'
-import type { DadosDeSetup } from '../domain/setup.ts'
+import type { SetupData } from '../domain/setup.ts'
 import { createProviderRepo } from './providers.ts'
 import { createServiceRepo } from './services.ts'
 
@@ -9,7 +9,7 @@ import { createServiceRepo } from './services.ts'
  * como os outros repositórios; existe para o guia e para o aviso do topo.
  */
 export interface SetupRepo {
-  dataFor(companyId: string): Promise<DadosDeSetup>
+  dataFor(companyId: string): Promise<SetupData>
 }
 
 export function createSetupRepo(db: Db): SetupRepo {
@@ -18,30 +18,31 @@ export function createSetupRepo(db: Db): SetupRepo {
 
   return {
     async dataFor(companyId) {
-      const servicos = await serviceRepo.listActive(companyId)
-      const semProfissional = await Promise.all(
-        servicos.map(async (servico) => {
-          const quem = await serviceRepo.providersFor(companyId, servico.id)
-          return quem.length === 0 ? servico.name : undefined
+      const services = await serviceRepo.listActive(companyId)
+      const unassigned = await Promise.all(
+        services.map(async (service) => {
+          const who = await serviceRepo.providersFor(companyId, service.id)
+          return who.length === 0 ? service.name : undefined
         }),
       )
 
-      const equipe = await providerRepo.listAll(companyId)
-      const ativos = equipe.filter((p) => p.active)
-      const semJornada = await Promise.all(
-        ativos.map(async (pessoa) => {
-          const jornada = await providerRepo.hoursFor(pessoa.id)
-          return jornada.length === 0 ? pessoa.name : undefined
+      const team = await providerRepo.listAll(companyId)
+      const active = team.filter((provider) => provider.active)
+      const withoutHours = await Promise.all(
+        active.map(async (provider) => {
+          const hours = await providerRepo.hoursFor(provider.id)
+          return hours.length === 0 ? provider.name : undefined
         }),
       )
 
-      const presente = (nome: string | undefined): nome is string => nome !== undefined
+      const named = (name: string | undefined): name is string => name !== undefined
 
       return {
-        servicosAtivos: servicos.length,
-        servicosSemProfissional: semProfissional.filter(presente),
-        profissionaisSemJornada: semJornada.filter(presente),
-        convitesPendentes: ativos.filter((p) => p.joinedAt === null).map((p) => p.name),
+        activeServices: services.length,
+        activeProviders: active.length,
+        servicesWithoutProvider: unassigned.filter(named),
+        providersWithoutHours: withoutHours.filter(named),
+        pendingInvites: active.filter((p) => p.joinedAt === null).map((p) => p.name),
       }
     },
   }

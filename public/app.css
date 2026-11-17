@@ -754,11 +754,111 @@ header.app .wrap .signout {
   flex: 1;
 }
 
-/* --- guia: cartão por assunto, um embaixo do outro --- */
+/* --- guia: o passo a passo da montagem e um cartão por assunto --- */
 
-#guia .people,
-#guia .empty {
-  margin-bottom: 20px;
+#guia .intro {
+  margin: 0 0 16px;
+}
+
+.steps {
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 14px;
+  padding-bottom: 20px;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+/* A linha é o que faz a lista virar caminho: sem ela são cinco avisos soltos. */
+.step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 38px;
+  bottom: 4px;
+  left: 15px;
+  width: 2px;
+  background: var(--md-outline-variant);
+}
+
+.step .mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface-variant);
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.step.done .mark {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.step.now .mark {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.step.optional .mark {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--md-outline-variant);
+}
+
+/* Passo que ainda depende do de cima: fica à vista, mas não disputa atenção. */
+.step.later {
+  opacity: 0.6;
+}
+
+.step .body {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding-top: 4px;
+}
+
+.step .body p {
+  margin: 0;
+}
+
+.step .body strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+}
+
+.step.now .body .tag {
+  color: var(--md-primary);
+  font-weight: 650;
+}
+
+/* O detalhe do momento — quem ficou de fora — não é texto de apoio. */
+.step .note {
+  color: var(--md-on-surface);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.step .body .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+  margin-top: 2px;
+  text-decoration: none;
 }
 
 #guia .card {
