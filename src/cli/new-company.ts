@@ -46,7 +46,7 @@ if ('error' in result) {
 
 console.log(`salão "${result.company.name}" criado`)
 console.log(`  clientes: https://${result.company.host}`)
-console.log(`  equipe:   https://${STAFF_PREFIX}${result.company.host}`)
+console.log(`  staff:   https://${STAFF_PREFIX}${result.company.host}`)
 console.log(
   `  dono:     ${result.owner.name} <${result.owner.email}> (${formatPhone(result.owner.phone)})`,
 )

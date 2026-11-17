@@ -175,8 +175,8 @@ export function backofficeApp({ db, auth }: Deps) {
       )
     }
 
-    const dia = typeof body.pago_ate === 'string' ? body.pago_ate.trim() : ''
-    if (dia !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(dia)) {
+    const day = typeof body.pago_ate === 'string' ? body.pago_ate.trim() : ''
+    if (day !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
       return renderPanel(
         c,
         await props({ error: 'Data de pagamento inválida.', editingId: id }),
@@ -187,7 +187,7 @@ export function backofficeApp({ db, auth }: Deps) {
     await subscriptionRepo.save(id, {
       plan: plano,
       priceCents,
-      paidUntil: dia === '' ? null : paidUntilInstant(dia, company.timezone),
+      paidUntil: day === '' ? null : paidUntilInstant(day, company.timezone),
     })
     return renderPanel(c, await props({ editingId: id }))
   })

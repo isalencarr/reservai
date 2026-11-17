@@ -13,7 +13,7 @@ const MODES: { value: ThemeMode; label: string; hint: string }[] = [
 /** Sem HTMX de propósito: a cor vive no cabeçalho da página, então trocar o tema
  * precisa recarregar para a tela já aparecer com a paleta nova. */
 export const Appearance: FC<AppearanceProps> = ({ company }) => (
-  <section id="aparencia">
+  <section id="appearance">
     <h2>Aparência</h2>
     <p class="muted">
       A paleta inteira é gerada pelo Material You a partir da cor escolhida, e vale para o que o

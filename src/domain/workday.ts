@@ -42,22 +42,22 @@ export function dayRanges(ranges: WorkRange[], weekday: number): WorkRange[] {
  */
 export function workweekError(ranges: WorkRange[]): string | undefined {
   for (const range of ranges) {
-    const dia = WEEKDAY_NAMES[range.weekday]
-    if (!dia) return 'Dia da semana inválido.'
+    const day = WEEKDAY_NAMES[range.weekday]
+    if (!day) return 'Dia da semana inválido.'
     if (range.startMinute < 0 || range.endMinute > DAY_MINUTES) {
-      return `Em ${dia}, o horário está fora do dia.`
+      return `Em ${day}, o horário está fora do dia.`
     }
     if (range.endMinute <= range.startMinute) {
-      return `Em ${dia}, o fim precisa vir depois do início.`
+      return `Em ${day}, o fim precisa vir depois do início.`
     }
   }
 
-  for (const [weekday, dia] of WEEKDAY_NAMES.entries()) {
+  for (const [weekday, day] of WEEKDAY_NAMES.entries()) {
     const doDia = dayRanges(ranges, weekday)
     for (const [index, range] of doDia.entries()) {
-      const anterior = index > 0 ? doDia[index - 1] : undefined
-      if (anterior && range.startMinute < anterior.endMinute) {
-        return `Em ${dia}, uma faixa começa antes de a outra terminar.`
+      const previous = index > 0 ? doDia[index - 1] : undefined
+      if (previous && range.startMinute < previous.endMinute) {
+        return `Em ${day}, uma faixa começa antes de a outra terminar.`
       }
     }
   }

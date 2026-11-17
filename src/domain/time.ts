@@ -112,8 +112,8 @@ export function parseMinute(raw: unknown): number | undefined {
   const match = TIME_PATTERN.exec(raw.trim())
   if (!match) return undefined
   const [, hour = '', minute = ''] = match
-  const total = Number(hour) * 60 + Number(minute)
-  return Number(minute) < 60 && total <= DAY_MINUTES ? total : undefined
+  const totalMinutes = Number(hour) * 60 + Number(minute)
+  return Number(minute) < 60 && totalMinutes <= DAY_MINUTES ? totalMinutes : undefined
 }
 
 const longDate = new Intl.DateTimeFormat('pt-BR', {

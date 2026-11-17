@@ -72,10 +72,10 @@ export function teamRoutes({ db, auth }: Deps) {
     if (!email) return render(c, { next, error: 'E-mail inválido.' }, 422)
 
     const staff = await providerRepo.findByEmail(company.id, email)
-    const suporte = staff ? undefined : await supportEntryOf(db, company.id, email)
-    if (staff?.active || suporte) {
+    const support = staff ? undefined : await supportEntryOf(db, company.id, email)
+    if (staff?.active || support) {
       await auth.api.signInMagicLink({
-        body: { email, callbackURL: next, name: staff?.name ?? suporte?.name ?? email },
+        body: { email, callbackURL: next, name: staff?.name ?? support?.name ?? email },
         headers: c.req.raw.headers,
       })
     } else {
@@ -128,10 +128,10 @@ export function teamRoutes({ db, auth }: Deps) {
   })
 
   /** Cadastro da equipe é do dono: é por aqui que entra quem vai atender. */
-  const pessoas = new Hono<StaffEnv>()
-  pessoas.use('*', staffMiddleware(auth, db))
-  pessoas.use('*', requireOwner())
-  pessoas.use('*', denyOnSupport())
+  const people = new Hono<StaffEnv>()
+  people.use('*', staffMiddleware(auth, db))
+  people.use('*', requireOwner())
+  people.use('*', denyOnSupport())
 
   function readPessoa(body: Record<string, unknown>): ProviderInput | { error: string } {
     const name = typeof body.nome === 'string' ? body.nome.trim() : ''
@@ -163,7 +163,7 @@ export function teamRoutes({ db, auth }: Deps) {
     }
   }
 
-  async function pessoasView(
+  async function peopleView(
     c: Context<StaffEnv>,
     options: { error?: string; editingId?: string } = {},
     status = 200,
@@ -190,7 +190,7 @@ export function teamRoutes({ db, auth }: Deps) {
 
   /** Convite é o próprio link de acesso: a pessoa não escolhe senha nem
    * preenche cadastro, só clica e entra. */
-  async function convidar(c: Context<StaffEnv>, name: string, email: string) {
+  async function invite(c: Context<StaffEnv>, name: string, email: string) {
     if (!email) return
     await auth.api.signInMagicLink({
       body: { email, callbackURL: '/equipe', name },
@@ -198,55 +198,55 @@ export function teamRoutes({ db, auth }: Deps) {
     })
   }
 
-  pessoas.get('/', (c) => pessoasView(c, { editingId: c.req.query('editar') }))
+  people.get('/', (c) => peopleView(c, { editingId: c.req.query('editar') }))
 
-  pessoas.post('/:id/convite', async (c) => {
+  people.post('/:id/convite', async (c) => {
     const company = c.get('company')
-    const pessoa = await providerRepo.findById(company.id, c.req.param('id') ?? '')
-    if (!pessoa) return c.notFound()
-    if (!pessoa.active) {
-      return pessoasView(c, { error: 'Essa pessoa não está mais na equipe.' }, 422)
+    const provider = await providerRepo.findById(company.id, c.req.param('id') ?? '')
+    if (!provider) return c.notFound()
+    if (!provider.active) {
+      return peopleView(c, { error: 'Essa pessoa não está mais na equipe.' }, 422)
     }
 
-    await convidar(c, pessoa.name, pessoa.email ?? '')
-    return pessoasView(c, { editingId: pessoa.id })
+    await invite(c, provider.name, provider.email ?? '')
+    return peopleView(c, { editingId: provider.id })
   })
 
-  pessoas.post('/', async (c) => {
+  people.post('/', async (c) => {
     const company = c.get('company')
     const parsed = readPessoa(await c.req.parseBody())
-    if ('error' in parsed) return pessoasView(c, { error: parsed.error }, 422)
+    if ('error' in parsed) return peopleView(c, { error: parsed.error }, 422)
 
     if (await providerRepo.findByPhone(company.id, parsed.phone)) {
-      return pessoasView(c, { error: 'Já existe alguém com esse telefone.' }, 422)
+      return peopleView(c, { error: 'Já existe alguém com esse telefone.' }, 422)
     }
     if (parsed.email && (await providerRepo.findByEmail(company.id, parsed.email))) {
-      return pessoasView(c, { error: 'Já existe alguém com esse e-mail.' }, 422)
+      return peopleView(c, { error: 'Já existe alguém com esse e-mail.' }, 422)
     }
 
     const criada = await providerRepo.create(company.id, parsed)
-    await convidar(c, criada.name, criada.email ?? '')
-    return pessoasView(c)
+    await invite(c, criada.name, criada.email ?? '')
+    return peopleView(c)
   })
 
-  pessoas.post('/:id', async (c) => {
+  people.post('/:id', async (c) => {
     const company = c.get('company')
     const id = c.req.param('id') ?? ''
     const existing = await providerRepo.findById(company.id, id)
     if (!existing) return c.notFound()
 
     const parsed = readPessoa(await c.req.parseBody())
-    if ('error' in parsed) return pessoasView(c, { error: parsed.error, editingId: id }, 422)
+    if ('error' in parsed) return peopleView(c, { error: parsed.error, editingId: id }, 422)
 
     const mesmoTelefone = await providerRepo.findByPhone(company.id, parsed.phone)
     if (mesmoTelefone && mesmoTelefone.id !== id) {
-      return pessoasView(c, { error: 'Já existe alguém com esse telefone.', editingId: id }, 422)
+      return peopleView(c, { error: 'Já existe alguém com esse telefone.', editingId: id }, 422)
     }
     const mesmoEmail = parsed.email
       ? await providerRepo.findByEmail(company.id, parsed.email)
       : undefined
     if (mesmoEmail && mesmoEmail.id !== id) {
-      return pessoasView(c, { error: 'Já existe alguém com esse e-mail.', editingId: id }, 422)
+      return peopleView(c, { error: 'Já existe alguém com esse e-mail.', editingId: id }, 422)
     }
 
     // Rebaixar o último dono deixaria o salão sem quem administra catálogo e carteira.
@@ -255,21 +255,21 @@ export function teamRoutes({ db, auth }: Deps) {
       parsed.role !== 'owner' &&
       (await providerRepo.countOtherOwners(company.id, id)) === 0
     ) {
-      return pessoasView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
+      return peopleView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
     }
 
     await providerRepo.update(company.id, id, parsed)
-    return pessoasView(c)
+    return peopleView(c)
   })
 
-  pessoas.post('/:id/ativo', async (c) => {
+  people.post('/:id/ativo', async (c) => {
     const company = c.get('company')
     const id = c.req.param('id') ?? ''
     const body = await c.req.parseBody()
     const active = body.ativo === 'sim'
 
     if (id === c.get('staff').id) {
-      return pessoasView(
+      return peopleView(
         c,
         { error: 'Você não pode tirar a si mesmo da equipe.', editingId: id },
         422,
@@ -284,19 +284,19 @@ export function teamRoutes({ db, auth }: Deps) {
       existing.role === 'owner' &&
       (await providerRepo.countOtherOwners(company.id, id)) === 0
     ) {
-      return pessoasView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
+      return peopleView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
     }
 
     await providerRepo.setActive(company.id, id, active)
-    return pessoasView(c)
+    return peopleView(c)
   })
 
   /** O registro é do salão, então fica com o dono. */
-  const acessos = new Hono<StaffEnv>()
-  acessos.use('*', staffMiddleware(auth, db))
-  acessos.use('*', requireOwner())
-  acessos.use('*', denyOnSupport())
-  acessos.get('/', async (c) => {
+  const accessLog = new Hono<StaffEnv>()
+  accessLog.use('*', staffMiddleware(auth, db))
+  accessLog.use('*', requireOwner())
+  accessLog.use('*', denyOnSupport())
+  accessLog.get('/', async (c) => {
     const company = c.get('company')
     return c.html(
       <StaffLayout title="Acessos" active="access" {...layoutProps(c)}>
@@ -307,9 +307,9 @@ export function teamRoutes({ db, auth }: Deps) {
 
   /** O guia é a porta de entrada de quem está começando, então vale para a
    * equipe toda: cada um vê a explicação das telas que alcança. */
-  const guia = new Hono<StaffEnv>()
-  guia.use('*', staffMiddleware(auth, db))
-  guia.get('/', (c) =>
+  const guide = new Hono<StaffEnv>()
+  guide.use('*', staffMiddleware(auth, db))
+  guide.get('/', (c) =>
     c.html(
       <StaffLayout title="Guia" active="guide" {...layoutProps(c)}>
         <Guide company={c.get('company')} staff={c.get('staff')} steps={c.get('setupSteps')} />
@@ -319,31 +319,31 @@ export function teamRoutes({ db, auth }: Deps) {
 
   /** Jornada é escala do salão, então fica com o dono: quem atende não decide
    * sozinho quando a própria agenda abre. */
-  const jornada = new Hono<StaffEnv>()
-  jornada.use('*', staffMiddleware(auth, db))
-  jornada.use('*', requireOwner())
+  const workweek = new Hono<StaffEnv>()
+  workweek.use('*', staffMiddleware(auth, db))
+  workweek.use('*', requireOwner())
 
-  async function jornadaView(
+  async function workweekView(
     c: Context<StaffEnv>,
-    options: { pessoaId?: string; error?: string; saved?: boolean } = {},
+    options: { providerId?: string; error?: string; saved?: boolean } = {},
     status = 200,
   ) {
     const company = c.get('company')
-    const equipe = await providerRepo.listByCompany(company.id)
-    const pessoa = equipe.find((p) => p.id === options.pessoaId) ?? equipe[0]
-    if (!pessoa) return c.notFound()
+    const team = await providerRepo.listByCompany(company.id)
+    const provider = team.find((p) => p.id === options.providerId) ?? team[0]
+    if (!provider) return c.notFound()
 
-    const semanas = await Promise.all(
-      equipe.map(async (membro) => {
-        const horas = await providerRepo.hoursFor(membro.id)
-        return { pessoa: membro, dias: new Set(horas.map((h) => h.weekday)).size }
+    const weeks = await Promise.all(
+      team.map(async (member) => {
+        const hours = await providerRepo.hoursFor(member.id)
+        return { provider: member, days: new Set(hours.map((h) => h.weekday)).size }
       }),
     )
 
     const view: WorkweekProps = {
-      items: semanas,
-      pessoa,
-      ranges: await providerRepo.hoursFor(pessoa.id),
+      items: weeks,
+      provider,
+      ranges: await providerRepo.hoursFor(provider.id),
       error: options.error,
       saved: options.saved,
     }
@@ -362,53 +362,53 @@ export function teamRoutes({ db, auth }: Deps) {
 
   /** Duas faixas por dia no formulário: a lacuna entre elas é o almoço. Campo
    * vazio apaga a faixa, e dia sem faixa é folga. */
-  function readSemana(body: Record<string, unknown>): WorkRange[] | { error: string } {
+  function readWeek(body: Record<string, unknown>): WorkRange[] | { error: string } {
     const ranges: WorkRange[] = []
     for (const weekday of WEEKDAY_NAMES.keys()) {
-      for (const faixa of [1, 2]) {
-        const inicio = parseMinute(body[`d${weekday}i${faixa}`])
-        const fim = parseMinute(body[`d${weekday}f${faixa}`])
-        if (inicio === undefined && fim === undefined) continue
-        if (inicio === undefined || fim === undefined) {
+      for (const band of [1, 2]) {
+        const start = parseMinute(body[`d${weekday}i${band}`])
+        const end = parseMinute(body[`d${weekday}f${band}`])
+        if (start === undefined && end === undefined) continue
+        if (start === undefined || end === undefined) {
           return { error: `Em ${WEEKDAY_NAMES[weekday]}, a faixa precisa de início e fim.` }
         }
-        ranges.push({ weekday, startMinute: inicio, endMinute: fim })
+        ranges.push({ weekday, startMinute: start, endMinute: end })
       }
     }
 
-    const erro = workweekError(ranges)
-    return erro ? { error: erro } : ranges
+    const error = workweekError(ranges)
+    return error ? { error: error } : ranges
   }
 
-  jornada.get('/', (c) => jornadaView(c, { pessoaId: c.req.query('pessoa') }))
+  workweek.get('/', (c) => workweekView(c, { providerId: c.req.query('pessoa') }))
 
-  jornada.post('/:id', async (c) => {
+  workweek.post('/:id', async (c) => {
     const id = c.req.param('id') ?? ''
-    const pessoa = await providerRepo.findById(c.get('company').id, id)
-    if (!pessoa) return c.notFound()
+    const provider = await providerRepo.findById(c.get('company').id, id)
+    if (!provider) return c.notFound()
 
-    const semana = readSemana(await c.req.parseBody())
-    if ('error' in semana) return jornadaView(c, { pessoaId: id, error: semana.error }, 422)
+    const week = readWeek(await c.req.parseBody())
+    if ('error' in week) return workweekView(c, { providerId: id, error: week.error }, 422)
 
-    await providerRepo.replaceHours(id, semana)
-    return jornadaView(c, { pessoaId: id, saved: true })
+    await providerRepo.replaceHours(id, week)
+    return workweekView(c, { providerId: id, saved: true })
   })
 
-  jornada.post('/:id/padrao', async (c) => {
+  workweek.post('/:id/padrao', async (c) => {
     const id = c.req.param('id') ?? ''
-    const pessoa = await providerRepo.findById(c.get('company').id, id)
-    if (!pessoa) return c.notFound()
+    const provider = await providerRepo.findById(c.get('company').id, id)
+    if (!provider) return c.notFound()
 
     await providerRepo.replaceHours(id, defaultWorkweek())
-    return jornadaView(c, { pessoaId: id, saved: true })
+    return workweekView(c, { providerId: id, saved: true })
   })
 
   /** Aparência é identidade do salão: fica com o dono. */
-  const aparencia = new Hono<StaffEnv>()
-  aparencia.use('*', staffMiddleware(auth, db))
-  aparencia.use('*', requireOwner())
+  const appearance = new Hono<StaffEnv>()
+  appearance.use('*', staffMiddleware(auth, db))
+  appearance.use('*', requireOwner())
 
-  aparencia.get('/', (c) => {
+  appearance.get('/', (c) => {
     const company = c.get('company')
     return c.html(
       <StaffLayout title="Aparência" active="appearance" {...layoutProps(c)}>
@@ -417,7 +417,7 @@ export function teamRoutes({ db, auth }: Deps) {
     )
   })
 
-  aparencia.post('/', async (c) => {
+  appearance.post('/', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
 
@@ -430,11 +430,11 @@ export function teamRoutes({ db, auth }: Deps) {
     return c.redirect('/equipe/aparencia', 303)
   })
 
-  app.route('/guia', guia)
-  app.route('/aparencia', aparencia)
-  app.route('/jornada', jornada)
-  app.route('/acessos', acessos)
-  app.route('/pessoas', pessoas)
+  app.route('/guia', guide)
+  app.route('/aparencia', appearance)
+  app.route('/jornada', workweek)
+  app.route('/acessos', accessLog)
+  app.route('/pessoas', people)
   app.route('/', painel)
   return app
 }

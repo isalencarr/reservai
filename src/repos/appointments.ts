@@ -165,12 +165,12 @@ export function createAppointmentRepo(db: Db): AppointmentRepo {
      * sem precisar abrir uma por uma. */
     async countPendingByProvider(companyId) {
       const rows = await db
-        .select({ providerId: appointments.providerId, total: sql<number>`count(*)` })
+        .select({ providerId: appointments.providerId, totalMinutes: sql<number>`count(*)` })
         .from(appointments)
         .where(and(eq(appointments.companyId, companyId), eq(appointments.status, 'pending')))
         .groupBy(appointments.providerId)
 
-      return Object.fromEntries(rows.map((r) => [r.providerId, Number(r.total)]))
+      return Object.fromEntries(rows.map((r) => [r.providerId, Number(r.totalMinutes)]))
     },
 
     async expireOverdue(now, companyId) {

@@ -29,7 +29,7 @@ const step = (service?: Service, provider?: Provider, date?: LocalDate, chosen?:
   return 0
 }
 
-const Voltar: FC<{ href: string }> = ({ href }) => (
+const BackLink: FC<{ href: string }> = ({ href }) => (
   <button type="button" class="link" hx-get={href}>
     <Icon name="arrow_back" />
     voltar
@@ -38,12 +38,12 @@ const Voltar: FC<{ href: string }> = ({ href }) => (
 
 export const Booking: FC<BookingProps> = (props) => {
   const { services, service, providers, provider, days, date, starts, chosen, timeZone } = props
-  const atual = step(service, provider, date, chosen)
+  const current = step(service, provider, date, chosen)
   const base = `/reserva?servico=${service?.id ?? ''}`
   const comPrestador = `${base}&prestador=${provider?.id ?? ''}`
 
   return (
-    <section id="reserva" hx-target="#reserva" hx-swap="outerHTML" hx-push-url="true">
+    <section id="booking" hx-target="#booking" hx-swap="outerHTML" hx-push-url="true">
       <div class="hero">
         <Icon name="event_available" class="hero-icon" />
         <strong>Olá, {props.customerName.split(' ')[0]}</strong>
@@ -61,7 +61,7 @@ export const Booking: FC<BookingProps> = (props) => {
         </a>
       </div>
 
-      {atual === 0 ? (
+      {current === 0 ? (
         <>
           <h2>Escolha o serviço</h2>
           <ul class="people">
@@ -84,9 +84,9 @@ export const Booking: FC<BookingProps> = (props) => {
         </>
       ) : null}
 
-      {atual === 1 ? (
+      {current === 1 ? (
         <>
-          <Voltar href="/reserva" />
+          <BackLink href="/reserva" />
           <h2>Com quem?</h2>
           {providers.length === 0 ? (
             <p class="empty">Nenhum profissional executa esse serviço agora.</p>
@@ -109,9 +109,9 @@ export const Booking: FC<BookingProps> = (props) => {
         </>
       ) : null}
 
-      {atual >= 2 && !chosen ? (
+      {current >= 2 && !chosen ? (
         <>
-          <Voltar href={atual === 2 ? base : comPrestador} />
+          <BackLink href={current === 2 ? base : comPrestador} />
           <h2>Qual dia?</h2>
           <ul class="days">
             {days.map((d) => (
@@ -155,7 +155,7 @@ export const Booking: FC<BookingProps> = (props) => {
 
       {chosen && service && provider ? (
         <>
-          <Voltar href={`${comPrestador}&data=${date ?? ''}`} />
+          <BackLink href={`${comPrestador}&data=${date ?? ''}`} />
           <h2>Confirmar</h2>
           <form class="card service-form" hx-post="/reserva">
             <p>
@@ -199,7 +199,7 @@ export type MyBookingsProps = {
 }
 
 export const MyBookings: FC<MyBookingsProps> = ({ customerName, timeZone, now, items, error }) => (
-  <section id="meus" hx-target="#meus" hx-swap="outerHTML">
+  <section id="my-bookings" hx-target="#my-bookings" hx-swap="outerHTML">
     <div class="daybar">
       <div class="today">
         <strong>Meus horários</strong>

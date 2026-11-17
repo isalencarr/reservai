@@ -81,7 +81,7 @@ export const DayView: FC<DayViewProps> = ({ date, timeZone, bands, providerId, p
   const link = (d: LocalDate) => `/agenda/${providerId}?date=${d}`
 
   return (
-    <section id="dia" hx-target="#dia" hx-swap="outerHTML">
+    <section id="day" hx-target="#day" hx-swap="outerHTML">
       <div class="daybar">
         <button
           type="button"

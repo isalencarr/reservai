@@ -23,7 +23,7 @@ export type CompaniesProps = {
 
 /** Os fusos do Brasil. Digitar à mão é como nasce um salão com horário trocado
  * em toda tela de data. */
-const FUSOS = [
+const TIMEZONES = [
   'America/Sao_Paulo',
   'America/Bahia',
   'America/Fortaleza',
@@ -38,11 +38,11 @@ const FUSOS = [
   'America/Noronha',
 ]
 
-const PLANOS: Subscription['plan'][] = ['mensal', 'anual']
+const PLANS: Subscription['plan'][] = ['mensal', 'anual']
 
 /** O que a lista precisa dizer de cada salão em uma linha: se está no ar e se
  * está pago. */
-function situacao({ company, subscription, support }: CompanyRow, now: Date): string {
+function statusLine({ company, subscription, support }: CompanyRow, now: Date): string {
   const pago = paymentState(subscription?.paidUntil, now)
   const prazo = subscription?.paidUntil
     ? formatDayMonth(paidUntilDate(subscription.paidUntil, company.timezone))
@@ -65,7 +65,7 @@ function situacao({ company, subscription, support }: CompanyRow, now: Date): st
 
 /** O suporte entra na área do salão, então o backoffice mostra a janela aberta
  * em vez de deixar o acesso invisível de onde foi concedido. */
-const BlocoSuporte: FC<{ row: CompanyRow }> = ({ row: { company, support } }) =>
+const SupportBlock: FC<{ row: CompanyRow }> = ({ row: { company, support } }) =>
   support ? (
     <form class="service-form" hx-post={`/suporte/${support.id}/encerrar`}>
       <p class="muted">
@@ -94,7 +94,7 @@ const BlocoSuporte: FC<{ row: CompanyRow }> = ({ row: { company, support } }) =>
     </form>
   )
 
-const Campos: FC<{ company?: Company }> = ({ company }) => (
+const Fields: FC<{ company?: Company }> = ({ company }) => (
   <div class="fields">
     <label>
       Nome
@@ -128,13 +128,13 @@ const Campos: FC<{ company?: Company }> = ({ company }) => (
     <label>
       Fuso
       <select name="fuso">
-        {FUSOS.map((fuso) => (
+        {TIMEZONES.map((timezone) => (
           <option
-            key={fuso}
-            value={fuso}
-            selected={(company?.timezone ?? DEFAULT_TIMEZONE) === fuso}
+            key={timezone}
+            value={timezone}
+            selected={(company?.timezone ?? DEFAULT_TIMEZONE) === timezone}
           >
-            {fuso.replace('America/', '')}
+            {timezone.replace('America/', '')}
           </option>
         ))}
       </select>
@@ -144,7 +144,7 @@ const Campos: FC<{ company?: Company }> = ({ company }) => (
 
 /** Assinatura e situação são formulários separados do de identidade: salvar o
  * pagamento não deve depender de o endereço estar preenchido certo. */
-const BlocoAssinatura: FC<{ row: CompanyRow }> = ({ row }) => {
+const SubscriptionBlock: FC<{ row: CompanyRow }> = ({ row }) => {
   const { company, subscription } = row
   const prazo = subscription?.paidUntil
     ? paidUntilDate(subscription.paidUntil, company.timezone)
@@ -157,7 +157,7 @@ const BlocoAssinatura: FC<{ row: CompanyRow }> = ({ row }) => {
         <label>
           Plano
           <select name="plano">
-            {PLANOS.map((plano) => (
+            {PLANS.map((plano) => (
               <option
                 key={plano}
                 value={plano}
@@ -192,19 +192,19 @@ const BlocoAssinatura: FC<{ row: CompanyRow }> = ({ row }) => {
   )
 }
 
-const BlocoSituacao: FC<{ row: CompanyRow }> = ({ row: { company } }) => {
-  const suspenso = company.status === 'suspended'
+const StatusBlock: FC<{ row: CompanyRow }> = ({ row: { company } }) => {
+  const isSuspended = company.status === 'suspended'
   return (
     <form class="service-form" hx-post={`/saloes/${company.id}/situacao`}>
-      <input type="hidden" name="situacao" value={suspenso ? 'ativo' : 'suspenso'} />
+      <input type="hidden" name="situacao" value={isSuspended ? 'ativo' : 'suspenso'} />
       <p class="muted">
-        {suspenso
+        {isSuspended
           ? 'Suspenso: o cliente não marca horário novo, o que já está confirmado segue valendo e a equipe continua entrando.'
           : 'Suspender bloqueia pedido novo do cliente. Agenda confirmada e acesso da equipe continuam.'}
       </p>
       <div class="actions">
-        <button type="submit" class={suspenso ? 'btn filled' : 'btn danger'}>
-          {suspenso ? 'Reativar' : 'Suspender'}
+        <button type="submit" class={isSuspended ? 'btn filled' : 'btn danger'}>
+          {isSuspended ? 'Reativar' : 'Suspender'}
         </button>
       </div>
     </form>
@@ -213,14 +213,14 @@ const BlocoSituacao: FC<{ row: CompanyRow }> = ({ row: { company } }) => {
 
 /** O modal é só marcação: abrir e fechar são navegações do HTMX sobre o mesmo
  * fragmento, então não existe estado de tela para sincronizar. */
-const Editar: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
+const EditRow: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
   <div class="overlay">
     <button type="button" class="overlay-bg" hx-get="/" aria-label="Fechar" />
     <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${row.company.name}`}>
       <form class="service-form" hx-post={`/saloes/${row.company.id}`}>
         <strong>{row.company.name}</strong>
         {error ? <p class="error">{error}</p> : null}
-        <Campos company={row.company} />
+        <Fields company={row.company} />
         <p class="muted">
           Cliente em {row.company.host}, equipe em {STAFF_PREFIX}
           {row.company.host}. Mudar o endereço muda onde o salão atende: quem tiver o link antigo
@@ -236,22 +236,22 @@ const Editar: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
         </div>
       </form>
 
-      <BlocoAssinatura row={row} />
-      <BlocoSituacao row={row} />
-      <BlocoSuporte row={row} />
+      <SubscriptionBlock row={row} />
+      <StatusBlock row={row} />
+      <SupportBlock row={row} />
     </div>
   </div>
 )
 
 export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) => (
-  <section id="saloes" hx-target="#saloes" hx-swap="outerHTML">
+  <section id="companies" hx-target="#companies" hx-swap="outerHTML">
     <h2>Salões</h2>
 
     <div class="catalog-layout">
       <form class="card service-form" hx-post="/saloes">
         <strong>Novo salão</strong>
         {error && !editing ? <p class="error">{error}</p> : null}
-        <Campos />
+        <Fields />
         <fieldset class="team">
           <legend>Primeiro dono</legend>
           <label>
@@ -285,7 +285,7 @@ export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) =>
                   {row.company.name}
                   <small class="muted">
                     {' · '}
-                    {row.company.host} · {situacao(row, now)}
+                    {row.company.host} · {statusLine(row, now)}
                   </small>
                 </span>
                 <button
@@ -303,6 +303,6 @@ export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) =>
       </aside>
     </div>
 
-    {editing ? <Editar row={editing} error={error} /> : null}
+    {editing ? <EditRow row={editing} error={error} /> : null}
   </section>
 )

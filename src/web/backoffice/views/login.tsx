@@ -11,7 +11,7 @@ export type EntrarProps = {
 /** A resposta é igual para e-mail da lista e e-mail de fora: a tela não conta
  * quem administra a plataforma. */
 export const BackofficeLogin: FC<EntrarProps> = ({ next, error, sentTo }) => (
-  <section id="entrar-backoffice" hx-target="#entrar-backoffice" hx-swap="outerHTML">
+  <section id="backoffice-login" hx-target="#backoffice-login" hx-swap="outerHTML">
     <h2>Entrar</h2>
     {error ? <p class="error">{error}</p> : null}
 

@@ -10,12 +10,12 @@ export type PeopleProps = {
   error?: string
 }
 
-const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
+const Fields: FC<{ person?: Provider }> = ({ person }) => (
   <>
     <div class="fields">
       <label>
         Nome
-        <input type="text" name="nome" required value={pessoa?.name ?? ''} />
+        <input type="text" name="nome" required value={person?.name ?? ''} />
       </label>
       <label>
         E-mail
@@ -25,7 +25,7 @@ const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
           required
           autocomplete="email"
           placeholder="nome@salao.com.br"
-          value={pessoa?.email ?? ''}
+          value={person?.email ?? ''}
         />
       </label>
       <label>
@@ -36,16 +36,16 @@ const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
           required
           inputmode="numeric"
           placeholder="(11) 98888-0001"
-          value={pessoa ? formatPhone(pessoa.phone) : ''}
+          value={person ? formatPhone(person.phone) : ''}
         />
       </label>
       <label>
         Papel
         <select name="papel">
-          <option value="provider" selected={pessoa?.role !== 'owner'}>
+          <option value="provider" selected={person?.role !== 'owner'}>
             Prestador
           </option>
-          <option value="owner" selected={pessoa?.role === 'owner'}>
+          <option value="owner" selected={person?.role === 'owner'}>
             Dono
           </option>
         </select>
@@ -60,7 +60,7 @@ const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
           min="5"
           max="240"
           step="5"
-          value={String(pessoa?.slotMinutes ?? 60)}
+          value={String(person?.slotMinutes ?? 60)}
         />
       </label>
       <label>
@@ -71,42 +71,42 @@ const Campos: FC<{ pessoa?: Provider }> = ({ pessoa }) => (
           min="0"
           max="1440"
           step="15"
-          value={String(pessoa?.minLeadMinutes ?? 60)}
+          value={String(person?.minLeadMinutes ?? 60)}
         />
       </label>
     </div>
   </>
 )
 
-const Editar: FC<{ pessoa: Provider; me: Provider; error?: string }> = ({ pessoa, me, error }) => (
+const EditRow: FC<{ person: Provider; me: Provider; error?: string }> = ({ person, me, error }) => (
   <div class="overlay">
     <button type="button" class="overlay-bg" hx-get="/equipe/pessoas" aria-label="Fechar" />
-    <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${pessoa.name}`}>
-      <form class="service-form" hx-post={`/equipe/pessoas/${pessoa.id}`}>
-        <strong>{pessoa.name}</strong>
+    <div class="modal" role="dialog" aria-modal="true" aria-label={`Editar ${person.name}`}>
+      <form class="service-form" hx-post={`/equipe/pessoas/${person.id}`}>
+        <strong>{person.name}</strong>
         {error ? <p class="error">{error}</p> : null}
-        <Campos pessoa={pessoa} />
+        <Fields person={person} />
         <div class="actions">
           <button type="submit" class="btn filled">
             Salvar
           </button>
-          {pessoa.active ? (
+          {person.active ? (
             <button
               type="button"
               class="btn ghost"
-              hx-post={`/equipe/pessoas/${pessoa.id}/convite`}
+              hx-post={`/equipe/pessoas/${person.id}/convite`}
             >
-              {pessoa.joinedAt ? 'Enviar link de acesso' : 'Reenviar convite'}
+              {person.joinedAt ? 'Enviar link de acesso' : 'Reenviar convite'}
             </button>
           ) : null}
-          {pessoa.id === me.id ? null : (
+          {person.id === me.id ? null : (
             <button
               type="button"
               class="btn danger"
-              hx-post={`/equipe/pessoas/${pessoa.id}/ativo`}
-              hx-vals={JSON.stringify({ ativo: pessoa.active ? 'nao' : 'sim' })}
+              hx-post={`/equipe/pessoas/${person.id}/ativo`}
+              hx-vals={JSON.stringify({ active: person.active ? 'nao' : 'sim' })}
             >
-              {pessoa.active ? 'Tirar da equipe' : 'Trazer de volta'}
+              {person.active ? 'Tirar da equipe' : 'Trazer de volta'}
             </button>
           )}
           <button type="button" class="btn ghost" hx-get="/equipe/pessoas">
@@ -119,7 +119,7 @@ const Editar: FC<{ pessoa: Provider; me: Provider; error?: string }> = ({ pessoa
 )
 
 export const People: FC<PeopleProps> = ({ items, me, editing, error }) => (
-  <section id="pessoas" hx-target="#pessoas" hx-swap="outerHTML">
+  <section id="people" hx-target="#people" hx-swap="outerHTML">
     <h2>Equipe</h2>
     <p class="muted">
       A pessoa entra pelo e-mail: ela recebe um link de acesso. A jornada já nasce de segunda a
@@ -130,7 +130,7 @@ export const People: FC<PeopleProps> = ({ items, me, editing, error }) => (
       <form class="card service-form" hx-post="/equipe/pessoas">
         <strong>Nova pessoa</strong>
         {error && !editing ? <p class="error">{error}</p> : null}
-        <Campos />
+        <Fields />
         <button type="submit" class="btn filled">
           <Icon name="add" />
           Adicionar
@@ -140,16 +140,16 @@ export const People: FC<PeopleProps> = ({ items, me, editing, error }) => (
       <aside class="card catalog">
         <strong>Pessoas</strong>
         <ul>
-          {items.map((pessoa) => (
-            <li key={pessoa.id} class={pessoa.active ? '' : 'off'}>
+          {items.map((person) => (
+            <li key={person.id} class={person.active ? '' : 'off'}>
               <span>
-                {pessoa.name}
-                {pessoa.role === 'owner' ? ' · dono' : ''}
-                {pessoa.active && !pessoa.joinedAt ? (
+                {person.name}
+                {person.role === 'owner' ? ' · dono' : ''}
+                {person.active && !person.joinedAt ? (
                   <small class="tag"> convite pendente</small>
                 ) : null}
               </span>
-              <button type="button" class="link" hx-get={`/equipe/pessoas?editar=${pessoa.id}`}>
+              <button type="button" class="link" hx-get={`/equipe/pessoas?editar=${person.id}`}>
                 editar
               </button>
             </li>
@@ -158,6 +158,6 @@ export const People: FC<PeopleProps> = ({ items, me, editing, error }) => (
       </aside>
     </div>
 
-    {editing ? <Editar pessoa={editing} me={me} error={error} /> : null}
+    {editing ? <EditRow person={editing} me={me} error={error} /> : null}
   </section>
 )

@@ -99,11 +99,11 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
 
   /** Salão suspenso não recebe pedido novo. A tela de "meus horários" e o
    * cancelamento continuam: quem já marcou não perde o que combinou. */
-  const suspenso = (c: Context<CustomerEnv>) => c.get('company').status === 'suspended'
+  const isSuspended = (c: Context<CustomerEnv>) => c.get('company').status === 'suspended'
 
   app.get('/', async (c) => {
     const company = c.get('company')
-    if (suspenso(c)) {
+    if (isSuspended(c)) {
       return c.html(
         <Layout title="Agendar" company={company}>
           <Unavailable />
@@ -176,7 +176,7 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
 
   app.post('/', async (c) => {
     const company = c.get('company')
-    if (suspenso(c)) {
+    if (isSuspended(c)) {
       return meus(c, 'O salão não está recebendo novos agendamentos.', 403)
     }
 

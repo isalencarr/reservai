@@ -9,14 +9,14 @@ export type EntrarProps = {
 }
 
 export const Entrar: FC<EntrarProps> = ({ next, error, phone }) => (
-  <section id="entrar" hx-target="#entrar" hx-swap="outerHTML">
+  <section id="login" hx-target="#login" hx-swap="outerHTML">
     <h2>{phone ? 'Confirme o código' : 'Seus dados'}</h2>
 
     {error ? <p class="error">{error}</p> : null}
 
     {phone ? (
       <form class="card service-form" hx-post="/entrar/codigo">
-        <p class="muted">Enviamos um código para {formatPhone(phone)}. Ele vale por 10 minutos.</p>
+        <p class="muted">Enviamos um código para {formatPhone(phone)}. Ele vale por 10 minutes.</p>
         <input type="hidden" name="telefone" value={phone} />
         <input type="hidden" name="next" value={next} />
         <label>

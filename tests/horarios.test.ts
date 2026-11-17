@@ -94,7 +94,7 @@ describe('consulta de horários', () => {
       headers: hx,
     })
     const html = await res.text()
-    expect(html.startsWith('<section id="consulta"')).toBe(true)
+    expect(html.startsWith('<section id="availability"')).toBe(true)
     expect(html).not.toContain('<html')
   })
 })

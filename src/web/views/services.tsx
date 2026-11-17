@@ -24,7 +24,7 @@ const Equipe: FC<{ providers: Provider[]; marked: string[] }> = ({ providers, ma
   </fieldset>
 )
 
-const Campos: FC<{ service?: Service }> = ({ service }) => (
+const Fields: FC<{ service?: Service }> = ({ service }) => (
   <div class="fields">
     <label>
       Nome
@@ -63,7 +63,7 @@ const Campos: FC<{ service?: Service }> = ({ service }) => (
 
 /** O modal é só marcação: abrir e fechar são navegações do HTMX sobre o mesmo
  * fragmento, então não existe estado de tela para sincronizar. */
-const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = ({
+const EditRow: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = ({
   row,
   providers,
   error,
@@ -74,7 +74,7 @@ const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = (
       <form class="service-form" hx-post={`/servicos/${row.service.id}`}>
         <strong>{row.service.name}</strong>
         {error ? <p class="error">{error}</p> : null}
-        <Campos service={row.service} />
+        <Fields service={row.service} />
         <Equipe providers={providers} marked={row.providerIds} />
         <div class="actions">
           <button type="submit" class="btn filled">
@@ -84,7 +84,7 @@ const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = (
             type="button"
             class="btn danger"
             hx-post={`/servicos/${row.service.id}/ativo`}
-            hx-vals={JSON.stringify({ ativo: row.service.active ? 'nao' : 'sim' })}
+            hx-vals={JSON.stringify({ active: row.service.active ? 'nao' : 'sim' })}
           >
             {row.service.active ? 'Desativar' : 'Reativar'}
           </button>
@@ -98,14 +98,14 @@ const Editar: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = (
 )
 
 export const Services: FC<ServicesProps> = ({ items, providers, editing, error }) => (
-  <section id="catalogo" hx-target="#catalogo" hx-swap="outerHTML">
+  <section id="catalog" hx-target="#catalog" hx-swap="outerHTML">
     <h2>Catálogo</h2>
 
     <div class="catalog-layout">
       <form class="card service-form" hx-post="/servicos">
         <strong>Novo serviço</strong>
         {error && !editing ? <p class="error">{error}</p> : null}
-        <Campos />
+        <Fields />
         <Equipe providers={providers} marked={[]} />
         <button type="submit" class="btn filled">
           <Icon name="add" />
@@ -137,6 +137,6 @@ export const Services: FC<ServicesProps> = ({ items, providers, editing, error }
       </aside>
     </div>
 
-    {editing ? <Editar row={editing} providers={providers} error={error} /> : null}
+    {editing ? <EditRow row={editing} providers={providers} error={error} /> : null}
   </section>
 )

@@ -12,7 +12,7 @@ export type StaffLoginProps = {
 /** A resposta é a mesma para e-mail da equipe e e-mail de fora: a tela não
  * confirma quem trabalha aqui. */
 export const StaffLogin: FC<StaffLoginProps> = ({ next, error, sentTo }) => (
-  <section id="entrar-equipe" hx-target="#entrar-equipe" hx-swap="outerHTML">
+  <section id="staff-login" hx-target="#staff-login" hx-swap="outerHTML">
     <h2>Entrar</h2>
     {error ? <p class="error">{error}</p> : null}
 
@@ -51,7 +51,7 @@ export type TeamPanelProps = {
 }
 
 export const TeamPanel: FC<TeamPanelProps> = ({ staff, providers, pending }) => (
-  <section id="painel">
+  <section id="panel">
     <div class="hero">
       <Icon name="calendar_month" class="hero-icon" />
       <strong>

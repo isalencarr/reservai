@@ -12,7 +12,7 @@ export type PendingProps = {
   items: PendingEntry[]
 }
 
-function restante(deadline: Date | null, now: Date): string {
+function timeLeft(deadline: Date | null, now: Date): string {
   if (!deadline) return 'sem prazo'
   const minutes = remainingMinutes(deadline, now)
   if (minutes === 0) return 'vence agora'
@@ -22,7 +22,7 @@ function restante(deadline: Date | null, now: Date): string {
 }
 
 export const Pending: FC<PendingProps> = ({ providerId, providerName, timeZone, now, items }) => (
-  <section id="fila" hx-target="#fila" hx-swap="outerHTML">
+  <section id="queue" hx-target="#queue" hx-swap="outerHTML">
     <div class="hero">
       <Icon name="pending_actions" class="hero-icon" />
       <strong>
@@ -46,7 +46,7 @@ export const Pending: FC<PendingProps> = ({ providerId, providerName, timeZone, 
             <span class="what">
               {item.serviceName ?? 'Serviço'} · {formatWhen(item.startsAt, timeZone)}
             </span>
-            <span class="deadline">{restante(item.deadline, now)}</span>
+            <span class="deadline">{timeLeft(item.deadline, now)}</span>
             <div class="actions">
               <button
                 type="button"

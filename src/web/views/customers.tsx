@@ -20,7 +20,7 @@ const STATUS_LABEL: Record<CustomerEntry['status'], string> = {
   expired: 'sem resposta',
 }
 
-const Historico: FC<{
+const History: FC<{
   customer: CustomerRow
   history: CustomerEntry[]
   timeZone: string
@@ -56,7 +56,7 @@ const Historico: FC<{
 )
 
 export const Customers: FC<CustomersProps> = ({ items, query, timeZone, viewing }) => (
-  <section id="clientes" hx-target="#clientes" hx-swap="outerHTML">
+  <section id="customers" hx-target="#customers" hx-swap="outerHTML">
     <div class="hero">
       <Icon name="group" class="hero-icon" />
       <strong>
@@ -97,7 +97,7 @@ export const Customers: FC<CustomersProps> = ({ items, query, timeZone, viewing 
     )}
 
     {viewing ? (
-      <Historico customer={viewing.customer} history={viewing.history} timeZone={timeZone} />
+      <History customer={viewing.customer} history={viewing.history} timeZone={timeZone} />
     ) : null}
   </section>
 )

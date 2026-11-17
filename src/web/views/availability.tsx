@@ -27,14 +27,14 @@ export const Availability: FC<AvailabilityProps> = ({
   starts,
 }) => (
   <section
-    id="consulta"
+    id="availability"
     hx-get="/horarios"
-    hx-target="#consulta"
+    hx-target="#availability"
     hx-swap="outerHTML"
     hx-trigger="change from:#filtros"
-    hx-include="#filtros"
+    hx-include="#filters"
   >
-    <form id="filtros" class="filters">
+    <form id="filters" class="filters">
       <label>
         Serviço
         <select name="servico">

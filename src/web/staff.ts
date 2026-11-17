@@ -72,7 +72,7 @@ export async function staffAccessOf(
 
 /** A única escrita que o suporte faz é sair. Trancar a porta de saída deixaria
  * a janela aberta até vencer sozinha. */
-const SAIDA = '/equipe/sair'
+const SIGN_OUT_PATH = '/equipe/sair'
 
 /**
  * Quem administra a plataforma só recebe link na porta de um salão enquanto
@@ -101,7 +101,7 @@ export function staffMiddleware(auth: Auth, db: Db): MiddlewareHandler<StaffEnv>
 
     // Suporte é só leitura, e o bloqueio mora aqui: rota de escrita nova nasce
     // protegida, em vez de depender de alguém lembrar de proteger.
-    if (access.support && c.req.method !== 'GET' && new URL(c.req.url).pathname !== SAIDA) {
+    if (access.support && c.req.method !== 'GET' && new URL(c.req.url).pathname !== SIGN_OUT_PATH) {
       return c.text('O acesso de suporte é só de leitura.', 403)
     }
 

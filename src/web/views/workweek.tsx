@@ -4,56 +4,56 @@ import { formatMinute } from '../../domain/time.ts'
 import { dayRanges, WEEKDAY_NAMES, type WorkRange } from '../../domain/workday.ts'
 import { Icon } from './icon.tsx'
 
-export type WorkweekItem = { pessoa: Provider; dias: number }
+export type WorkweekItem = { provider: Provider; days: number }
 
 export type WorkweekProps = {
   items: WorkweekItem[]
-  pessoa: Provider
+  provider: Provider
   ranges: WorkRange[]
   error?: string
   saved?: boolean
 }
 
-const Faixa: FC<{ campo: string; rotulo: string; minuto?: number }> = ({
-  campo,
-  rotulo,
-  minuto,
+const RangeField: FC<{ field: string; label: string; minute?: number }> = ({
+  field,
+  label,
+  minute,
 }) => (
   <label>
-    {rotulo}
+    {label}
     <input
       type="time"
-      name={campo}
+      name={field}
       step="300"
-      value={minuto === undefined ? '' : formatMinute(minuto)}
+      value={minute === undefined ? '' : formatMinute(minute)}
     />
   </label>
 )
 
-const Dia: FC<{ weekday: number; nome: string; ranges: WorkRange[] }> = ({
+const DayRow: FC<{ weekday: number; name: string; ranges: WorkRange[] }> = ({
   weekday,
-  nome,
+  name,
   ranges,
 }) => {
-  const faixas = dayRanges(ranges, weekday)
-  const primeira = faixas[0]
-  const segunda = faixas[1]
+  const rangesOfDay = dayRanges(ranges, weekday)
+  const first = rangesOfDay[0]
+  const second = rangesOfDay[1]
 
   return (
     <div class="day">
       <strong>
-        {nome}
-        {faixas.length === 0 ? <small class="tag"> folga</small> : null}
+        {name}
+        {rangesOfDay.length === 0 ? <small class="tag"> folga</small> : null}
       </strong>
       <div class="ranges">
-        <Faixa campo={`d${weekday}i1`} rotulo="de" minuto={primeira?.startMinute} />
-        <Faixa campo={`d${weekday}f1`} rotulo="até" minuto={primeira?.endMinute} />
-        <Faixa
-          campo={`d${weekday}i2`}
-          rotulo="depois do almoço, de"
-          minuto={segunda?.startMinute}
+        <RangeField field={`d${weekday}i1`} label="de" minute={first?.startMinute} />
+        <RangeField field={`d${weekday}f1`} label="até" minute={first?.endMinute} />
+        <RangeField
+          field={`d${weekday}i2`}
+          label="depois do almoço, de"
+          minute={second?.startMinute}
         />
-        <Faixa campo={`d${weekday}f2`} rotulo="até" minuto={segunda?.endMinute} />
+        <RangeField field={`d${weekday}f2`} label="até" minute={second?.endMinute} />
       </div>
     </div>
   )
@@ -61,8 +61,8 @@ const Dia: FC<{ weekday: number; nome: string; ranges: WorkRange[] }> = ({
 
 /** Uma pessoa por vez: a jornada é a semana inteira dela, e sete dias de duas
  * pessoas na mesma tela ninguém lê no celular. */
-export const Workweek: FC<WorkweekProps> = ({ items, pessoa, ranges, error, saved }) => (
-  <section id="jornada" hx-target="#jornada" hx-swap="outerHTML">
+export const Workweek: FC<WorkweekProps> = ({ items, provider, ranges, error, saved }) => (
+  <section id="workweek" hx-target="#workweek" hx-swap="outerHTML">
     <h2>Jornada</h2>
     <p class="muted">
       O horário de trabalho de cada pessoa, por dia da semana. É daqui que sai o que o cliente vê
@@ -71,14 +71,14 @@ export const Workweek: FC<WorkweekProps> = ({ items, pessoa, ranges, error, save
     </p>
 
     <div class="catalog-layout">
-      <form class="card service-form" hx-post={`/equipe/jornada/${pessoa.id}`}>
-        <strong>{pessoa.name}</strong>
+      <form class="card service-form" hx-post={`/equipe/jornada/${provider.id}`}>
+        <strong>{provider.name}</strong>
         {error ? <p class="error">{error}</p> : null}
         {saved && !error ? <p class="tag">Jornada salva.</p> : null}
 
         <div class="week">
-          {WEEKDAY_NAMES.map((nome, weekday) => (
-            <Dia key={nome} weekday={weekday} nome={nome} ranges={ranges} />
+          {WEEKDAY_NAMES.map((name, weekday) => (
+            <DayRow key={name} weekday={weekday} name={name} ranges={ranges} />
           ))}
         </div>
 
@@ -90,7 +90,7 @@ export const Workweek: FC<WorkweekProps> = ({ items, pessoa, ranges, error, save
           <button
             type="button"
             class="btn ghost"
-            hx-post={`/equipe/jornada/${pessoa.id}/padrao`}
+            hx-post={`/equipe/jornada/${provider.id}/padrao`}
             title="Segunda a sábado, 9h às 12h e 13h às 18h"
           >
             Usar a jornada padrão
@@ -102,23 +102,23 @@ export const Workweek: FC<WorkweekProps> = ({ items, pessoa, ranges, error, save
         <strong>Equipe</strong>
         <ul>
           {items.map((item) => (
-            <li key={item.pessoa.id}>
+            <li key={item.provider.id}>
               <span>
-                {item.pessoa.name}
+                {item.provider.name}
                 <small class="tag">
                   {' '}
-                  {item.dias === 0
+                  {item.days === 0
                     ? 'sem jornada'
-                    : `${item.dias} ${item.dias === 1 ? 'dia' : 'dias'} na semana`}
+                    : `${item.days} ${item.days === 1 ? 'dia' : 'dias'} na semana`}
                 </small>
               </span>
-              {item.pessoa.id === pessoa.id ? (
+              {item.provider.id === provider.id ? (
                 <small class="tag">editando</small>
               ) : (
                 <button
                   type="button"
                   class="link"
-                  hx-get={`/equipe/jornada?pessoa=${item.pessoa.id}`}
+                  hx-get={`/equipe/jornada?pessoa=${item.provider.id}`}
                 >
                   abrir
                 </button>

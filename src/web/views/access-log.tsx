@@ -15,7 +15,7 @@ const LABEL: Record<AuthEvent['type'], string> = {
 }
 
 export const AccessLog: FC<AccessLogProps> = ({ items, timeZone }) => (
-  <section id="acessos">
+  <section id="access-log">
     <h2>Acessos</h2>
     <p class="muted">
       E-mail e IP ficam parcialmente escondidos: dá para investigar um acesso estranho sem guardar o
