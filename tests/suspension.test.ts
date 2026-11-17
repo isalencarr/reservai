@@ -8,7 +8,7 @@ import { createApp } from '../src/web/app.tsx'
 import { createSeededDb, staffLogin, upcomingWeekday } from './helpers.ts'
 
 const HOST = 'beleza-pura.localhost'
-const EQUIPE = 'equipe.beleza-pura.localhost'
+const STAFF_HOST = 'equipe.beleza-pura.localhost'
 const SP = 'America/Sao_Paulo'
 const MONDAY = upcomingWeekday(1, SP)
 const PHONE = '(11) 97777-3333'
@@ -42,15 +42,15 @@ async function setup() {
     return cookie
   }
 
-  const suspender = () => createCompanyRepo(seeded.db).setStatus(seeded.belezaPura.id, 'suspended')
+  const suspend = () => createCompanyRepo(seeded.db).setStatus(seeded.belezaPura.id, 'suspended')
 
-  return { ...seeded, notifier, app, login, suspender }
+  return { ...seeded, notifier, app, login, suspend }
 }
 
 describe('salão suspenso, lado do cliente', () => {
   it('a porta do cliente explica em vez de oferecer agendamento', async () => {
     const s = await setup()
-    await s.suspender()
+    await s.suspend()
 
     const res = await s.app.request('/', { headers: { host: HOST } })
     const html = await res.text()
@@ -62,7 +62,7 @@ describe('salão suspenso, lado do cliente', () => {
   it('a tela de reserva não monta', async () => {
     const s = await setup()
     const cookie = await s.login()
-    await s.suspender()
+    await s.suspend()
 
     const res = await s.app.request('/reserva', { headers: { host: HOST, cookie } })
     expect(res.status).toBe(200)
@@ -72,7 +72,7 @@ describe('salão suspenso, lado do cliente', () => {
   it('recusa o pedido novo', async () => {
     const s = await setup()
     const cookie = await s.login()
-    await s.suspender()
+    await s.suspend()
 
     const res = await s.app.request(
       '/reserva',
@@ -94,7 +94,7 @@ describe('salão suspenso, lado do cliente', () => {
     const s = await setup()
     const cookie = await s.login()
 
-    const pedido = await s.app.request(
+    const request = await s.app.request(
       '/reserva',
       form(
         {
@@ -105,18 +105,18 @@ describe('salão suspenso, lado do cliente', () => {
         cookie,
       ),
     )
-    expect(pedido.status).toBe(200)
+    expect(request.status).toBe(200)
     const [criado] = await s.db.select().from(appointments)
     if (!criado) throw new Error('o pedido não foi criado')
 
-    await s.suspender()
+    await s.suspend()
 
-    const meus = await s.app.request('/reserva/meus', { headers: { host: HOST, cookie } })
-    expect(meus.status).toBe(200)
-    expect(await meus.text()).toContain('Corte feminino')
+    const mine = await s.app.request('/reserva/meus', { headers: { host: HOST, cookie } })
+    expect(mine.status).toBe(200)
+    expect(await mine.text()).toContain('Corte feminino')
 
-    const cancelou = await s.app.request(`/reserva/${criado.id}/cancelar`, form({}, cookie))
-    expect(cancelou.status).toBe(200)
+    const cancelled = await s.app.request(`/reserva/${criado.id}/cancelar`, form({}, cookie))
+    expect(cancelled.status).toBe(200)
     const [depois] = await s.db.select().from(appointments).where(eq(appointments.id, criado.id))
     expect(depois?.status).toBe('cancelled')
   })
@@ -126,11 +126,11 @@ describe('salão suspenso, lado da equipe', () => {
   it('a equipe entra e vê o aviso em toda tela', async () => {
     const s = await setup()
     const notifier = s.notifier
-    const cookie = await staffLogin(s.app, notifier, EQUIPE, s.carla.email ?? '')
-    await s.suspender()
+    const cookie = await staffLogin(s.app, notifier, STAFF_HOST, s.carla.email ?? '')
+    await s.suspend()
 
     for (const path of ['/equipe', '/servicos', '/horarios']) {
-      const res = await s.app.request(path, { headers: { host: EQUIPE, cookie } })
+      const res = await s.app.request(path, { headers: { host: STAFF_HOST, cookie } })
       expect(res.status).toBe(200)
       expect(await res.text()).toContain('Salão suspenso')
     }
@@ -138,9 +138,9 @@ describe('salão suspenso, lado da equipe', () => {
 
   it('sem suspensão não aparece aviso', async () => {
     const s = await setup()
-    const cookie = await staffLogin(s.app, s.notifier, EQUIPE, s.carla.email ?? '')
+    const cookie = await staffLogin(s.app, s.notifier, STAFF_HOST, s.carla.email ?? '')
 
-    const res = await s.app.request('/equipe', { headers: { host: EQUIPE, cookie } })
+    const res = await s.app.request('/equipe', { headers: { host: STAFF_HOST, cookie } })
     expect(await res.text()).not.toContain('Salão suspenso')
   })
 })
@@ -149,7 +149,7 @@ describe('reativar', () => {
   it('volta a aceitar pedido depois de reativado', async () => {
     const s = await setup()
     const cookie = await s.login()
-    await s.suspender()
+    await s.suspend()
     await createCompanyRepo(s.db).setStatus(s.belezaPura.id, 'active')
 
     const res = await s.app.request(
@@ -169,7 +169,7 @@ describe('reativar', () => {
 
   it('reativar limpa a data de suspensão', async () => {
     const s = await setup()
-    await s.suspender()
+    await s.suspend()
     await createCompanyRepo(s.db).setStatus(s.belezaPura.id, 'active')
 
     const [company] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))

@@ -9,30 +9,30 @@ import { createSeededDb, magicLogin } from './helpers.ts'
 const HOST = 'backoffice.localhost'
 const STAFF = 'equipe.beleza-pura.localhost'
 const FORM = { 'content-type': 'application/x-www-form-urlencoded' }
-const DONO = { email: 'isaac@plataforma.dev', nome: 'Isaac' }
+const OWNER = { email: 'isaac@plataforma.dev', nome: 'Isaac' }
 
 async function setup() {
   const seeded = await createSeededDb()
-  await createPlatformAdminRepo(seeded.db).ensure(DONO.email, DONO.nome)
+  await createPlatformAdminRepo(seeded.db).ensure(OWNER.email, OWNER.nome)
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
 
-  const pedirLink = (email: string, host = HOST) =>
+  const askForLink = (email: string, host = HOST) =>
     app.request('/entrar', {
       method: 'POST',
       headers: { ...FORM, host },
       body: new URLSearchParams({ email }),
     })
 
-  return { ...seeded, notifier, app, pedirLink }
+  return { ...seeded, notifier, app, askForLink }
 }
 
 describe('porta do backoffice', () => {
   it('separa o backoffice do salão pelo endereço', async () => {
     const s = await setup()
 
-    const outro = await s.app.request('/', { headers: { host: 'desconhecido.exemplo.com' } })
-    expect(outro.status).toBe(404)
+    const other = await s.app.request('/', { headers: { host: 'desconhecido.exemplo.com' } })
+    expect(other.status).toBe(404)
 
     const backoffice = await s.app.request('/entrar', { headers: { host: HOST } })
     expect(backoffice.status).toBe(200)
@@ -48,7 +48,7 @@ describe('porta do backoffice', () => {
 
   it('deixa entrar quem está na lista da plataforma', async () => {
     const s = await setup()
-    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
+    const cookie = await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
 
     const res = await s.app.request('/', { headers: { host: HOST, cookie } })
     expect(res.status).toBe(200)
@@ -61,17 +61,17 @@ describe('porta do backoffice', () => {
    * já derrubou o envio do link uma vez. */
   it('deixa entrar com a porta no endereço', async () => {
     const s = await setup()
-    const comPorta = `${HOST}:3000`
-    const cookie = await magicLogin(s.app, s.notifier, comPorta, DONO.email, '/entrar')
+    const withHost = `${HOST}:3000`
+    const cookie = await magicLogin(s.app, s.notifier, withHost, OWNER.email, '/entrar')
 
-    const res = await s.app.request('/', { headers: { host: comPorta, cookie } })
+    const res = await s.app.request('/', { headers: { host: withHost, cookie } })
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('Beleza Pura')
   })
 
   it('não emite link para e-mail fora da lista', async () => {
     const s = await setup()
-    await s.pedirLink('qualquer@exemplo.com')
+    await s.askForLink('qualquer@exemplo.com')
 
     expect(s.notifier.sent).toHaveLength(0)
     const [evento] = await s.db.select().from(authEvents)
@@ -81,7 +81,7 @@ describe('porta do backoffice', () => {
 
   it('não emite link para dono de salão na porta da plataforma', async () => {
     const s = await setup()
-    const res = await s.pedirLink(s.carla.email ?? '')
+    const res = await s.askForLink(s.carla.email ?? '')
 
     expect(res.status).toBe(200)
     expect(s.notifier.sent).toHaveLength(0)
@@ -92,7 +92,7 @@ describe('porta do backoffice', () => {
     await s.app.request('/equipe/entrar', {
       method: 'POST',
       headers: { ...FORM, host: STAFF },
-      body: new URLSearchParams({ email: DONO.email }),
+      body: new URLSearchParams({ email: OWNER.email }),
     })
 
     expect(s.notifier.sent).toHaveLength(0)
@@ -100,11 +100,11 @@ describe('porta do backoffice', () => {
 
   it('registra a entrada da plataforma sem salão', async () => {
     const s = await setup()
-    await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
+    await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
 
     const [evento] = await s.db.select().from(authEvents)
     expect(evento).toMatchObject({ type: 'login', companyId: null, reason: 'backoffice' })
-    expect(evento?.emailMasked).not.toContain(DONO.email)
+    expect(evento?.emailMasked).not.toContain(OWNER.email)
   })
 
   it('não deixa criar salão sem sessão', async () => {
@@ -120,10 +120,13 @@ describe('porta do backoffice', () => {
 
   it('sai e volta a pedir link', async () => {
     const s = await setup()
-    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
+    const cookie = await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
 
-    const saiu = await s.app.request('/sair', { method: 'POST', headers: { host: HOST, cookie } })
-    expect(saiu.headers.get('hx-redirect')).toBe('/entrar')
+    const signedOut = await s.app.request('/sair', {
+      method: 'POST',
+      headers: { host: HOST, cookie },
+    })
+    expect(signedOut.headers.get('hx-redirect')).toBe('/entrar')
 
     const depois = await s.app.request('/', { headers: { host: HOST, cookie } })
     expect(depois.status).toBe(303)
@@ -131,19 +134,19 @@ describe('porta do backoffice', () => {
 })
 
 describe('salões pelo backoffice', () => {
-  async function logado() {
+  async function loggedIn() {
     const s = await setup()
-    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
-    const enviar = (path: string, campos: Record<string, string>) =>
+    const cookie = await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
+    const send = (path: string, campos: Record<string, string>) =>
       s.app.request(path, {
         method: 'POST',
         headers: { ...FORM, host: HOST, cookie },
         body: new URLSearchParams(campos),
       })
-    return { ...s, cookie, enviar }
+    return { ...s, cookie, send }
   }
 
-  const novo = {
+  const fresh = {
     nome: 'Salão da Inês',
     host: 'ines.com.br',
     slug: '',
@@ -154,26 +157,26 @@ describe('salões pelo backoffice', () => {
   }
 
   it('cria o salão e ele já atende no endereço', async () => {
-    const s = await logado()
-    const res = await s.enviar('/saloes', novo)
+    const s = await loggedIn()
+    const res = await s.send('/saloes', fresh)
 
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('ines.com.br')
 
-    const criado = await s.app.request('/', { headers: { host: 'ines.com.br' } })
-    expect(criado.status).toBe(200)
-    expect(await criado.text()).toContain('Salão da Inês')
+    const created = await s.app.request('/', { headers: { host: 'ines.com.br' } })
+    expect(created.status).toBe(200)
+    expect(await created.text()).toContain('Salão da Inês')
   })
 
   it('o dono criado recebe link na porta da equipe dele', async () => {
-    const s = await logado()
-    await s.enviar('/saloes', novo)
+    const s = await loggedIn()
+    await s.send('/saloes', fresh)
 
     const cookie = await magicLogin(
       s.app,
       s.notifier,
       'equipe.ines.com.br',
-      novo.email,
+      fresh.email,
       '/equipe/entrar',
     )
     const res = await s.app.request('/equipe', { headers: { host: 'equipe.ines.com.br', cookie } })
@@ -181,8 +184,8 @@ describe('salões pelo backoffice', () => {
   })
 
   it('explica o endereço repetido sem criar nada', async () => {
-    const s = await logado()
-    const res = await s.enviar('/saloes', { ...novo, host: 'beleza-pura.localhost' })
+    const s = await loggedIn()
+    const res = await s.send('/saloes', { ...fresh, host: 'beleza-pura.localhost' })
 
     expect(res.status).toBe(422)
     expect(await res.text()).toContain('Já existe um salão em')
@@ -190,8 +193,8 @@ describe('salões pelo backoffice', () => {
   })
 
   it('edita o salão pelo formulário', async () => {
-    const s = await logado()
-    const res = await s.enviar(`/saloes/${s.belezaPura.id}`, {
+    const s = await loggedIn()
+    const res = await s.send(`/saloes/${s.belezaPura.id}`, {
       nome: 'Beleza Pura Hair',
       host: 'beleza-pura.localhost',
       slug: 'beleza-pura',
@@ -204,8 +207,8 @@ describe('salões pelo backoffice', () => {
   })
 
   it('responde 404 para salão que não existe', async () => {
-    const s = await logado()
-    const res = await s.enviar('/saloes/nao-existe', {
+    const s = await loggedIn()
+    const res = await s.send('/saloes/nao-existe', {
       nome: 'X',
       host: 'x.com.br',
       slug: 'x',
@@ -216,26 +219,26 @@ describe('salões pelo backoffice', () => {
 })
 
 describe('assinatura e suspensão', () => {
-  async function logado() {
+  async function loggedIn() {
     const s = await setup()
-    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
-    const enviar = (path: string, campos: Record<string, string>) =>
+    const cookie = await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
+    const send = (path: string, campos: Record<string, string>) =>
       s.app.request(path, {
         method: 'POST',
         headers: { ...FORM, host: HOST, cookie },
         body: new URLSearchParams(campos),
       })
-    return { ...s, cookie, enviar }
+    return { ...s, cookie, send }
   }
 
-  const futuro = () => {
+  const future = () => {
     const d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     return d.toISOString().slice(0, 10)
   }
 
   it('salão criado aqui nasce sem pagamento registrado', async () => {
-    const s = await logado()
-    await s.enviar('/saloes', {
+    const s = await loggedIn()
+    await s.send('/saloes', {
       nome: 'Salão da Inês',
       host: 'ines.com.br',
       slug: '',
@@ -250,11 +253,11 @@ describe('assinatura e suspensão', () => {
   })
 
   it('marca o pagamento e a lista passa a dizer até quando', async () => {
-    const s = await logado()
-    const res = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+    const s = await loggedIn()
+    const res = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
       plano: 'anual',
       valor: '149,00',
-      pago_ate: futuro(),
+      pago_ate: future(),
     })
 
     expect(res.status).toBe(200)
@@ -265,29 +268,29 @@ describe('assinatura e suspensão', () => {
 
     // O prazo é guardado como a virada do dia; a tela tem de mostrar o dia pago,
     // não o seguinte.
-    const dia = futuro()
-    await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+    const day = future()
+    await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
       plano: 'mensal',
       valor: '149,00',
-      pago_ate: dia,
+      pago_ate: day,
     })
-    const tela = await s.app.request('/', { headers: { host: HOST, cookie: s.cookie } })
-    const [, mes, diaDoMes] = dia.split('-')
-    expect(await tela.text()).toContain(`pago até ${diaDoMes}/${mes}`)
+    const screen = await s.app.request('/', { headers: { host: HOST, cookie: s.cookie } })
+    const [, mes, diaDoMes] = day.split('-')
+    expect(await screen.text()).toContain(`pago até ${diaDoMes}/${mes}`)
   })
 
   it('recusa valor e data inválidos sem gravar', async () => {
-    const s = await logado()
+    const s = await loggedIn()
 
-    const valor = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+    const priced = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
       plano: 'mensal',
       valor: 'muito',
-      pago_ate: futuro(),
+      pago_ate: future(),
     })
-    expect(valor.status).toBe(422)
-    expect(await valor.text()).toContain('Valor inválido')
+    expect(priced.status).toBe(422)
+    expect(await priced.text()).toContain('Valor inválido')
 
-    const data = await s.enviar(`/saloes/${s.belezaPura.id}/assinatura`, {
+    const data = await s.send(`/saloes/${s.belezaPura.id}/assinatura`, {
       plano: 'mensal',
       valor: '149,00',
       pago_ate: '30/12/2026',
@@ -299,19 +302,19 @@ describe('assinatura e suspensão', () => {
   })
 
   it('suspende e reativa o salão', async () => {
-    const s = await logado()
+    const s = await loggedIn()
 
-    const suspendeu = await s.enviar(`/saloes/${s.belezaPura.id}/situacao`, {
+    const suspended = await s.send(`/saloes/${s.belezaPura.id}/situacao`, {
       situacao: 'suspenso',
     })
-    expect(suspendeu.status).toBe(200)
-    expect(await suspendeu.text()).toContain('suspenso')
+    expect(suspended.status).toBe(200)
+    expect(await suspended.text()).toContain('suspenso')
 
     const [depois] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
     expect(depois?.status).toBe('suspended')
     expect(depois?.suspendedAt).toBeInstanceOf(Date)
 
-    await s.enviar(`/saloes/${s.belezaPura.id}/situacao`, { situacao: 'ativo' })
+    await s.send(`/saloes/${s.belezaPura.id}/situacao`, { situacao: 'ativo' })
     const [reativado] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
     expect(reativado).toMatchObject({ status: 'active', suspendedAt: null })
   })
@@ -331,69 +334,63 @@ describe('assinatura e suspensão', () => {
 })
 
 describe('acesso de suporte pelo backoffice', () => {
-  async function logado() {
+  async function loggedIn() {
     const s = await setup()
-    const cookie = await magicLogin(s.app, s.notifier, HOST, DONO.email, '/entrar')
-    const enviar = (path: string, campos: Record<string, string> = {}) =>
+    const cookie = await magicLogin(s.app, s.notifier, HOST, OWNER.email, '/entrar')
+    const send = (path: string, campos: Record<string, string> = {}) =>
       s.app.request(path, {
         method: 'POST',
         headers: { ...FORM, host: HOST, cookie },
         body: new URLSearchParams(campos),
       })
-    return { ...s, cookie, enviar }
+    return { ...s, cookie, send }
   }
 
   it('abre a janela e registra no log do salão', async () => {
-    const s = await logado()
-    const res = await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+    const s = await loggedIn()
+    const res = await s.send(`/saloes/${s.belezaPura.id}/suporte`)
 
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('Encerrar suporte')
 
     const [sessao] = await s.db.select().from(supportSessions)
-    expect(sessao).toMatchObject({ companyId: s.belezaPura.id, adminEmail: DONO.email })
+    expect(sessao).toMatchObject({ companyId: s.belezaPura.id, adminEmail: OWNER.email })
 
     const [evento] = await s.db.select().from(authEvents).where(eq(authEvents.type, 'support'))
     expect(evento).toMatchObject({ companyId: s.belezaPura.id })
     expect(evento?.reason).toContain('acesso aberto até')
-    expect(evento?.emailMasked).not.toContain(DONO.email)
+    expect(evento?.emailMasked).not.toContain(OWNER.email)
   })
 
   it('o dono enxerga o acesso em /equipe/acessos', async () => {
-    const s = await logado()
-    await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+    const s = await loggedIn()
+    await s.send(`/saloes/${s.belezaPura.id}/suporte`)
 
-    const equipe = 'equipe.beleza-pura.localhost'
-    const cookie = await magicLogin(
-      s.app,
-      s.notifier,
-      equipe,
-      s.carla.email ?? '',
-      '/equipe/entrar',
-    )
-    const res = await s.app.request('/equipe/acessos', { headers: { host: equipe, cookie } })
+    const team = 'equipe.beleza-pura.localhost'
+    const cookie = await magicLogin(s.app, s.notifier, team, s.carla.email ?? '', '/equipe/entrar')
+    const res = await s.app.request('/equipe/acessos', { headers: { host: team, cookie } })
 
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('suporte da plataforma')
   })
 
   it('encerra a janela antes do prazo', async () => {
-    const s = await logado()
-    await s.enviar(`/saloes/${s.belezaPura.id}/suporte`)
+    const s = await loggedIn()
+    await s.send(`/saloes/${s.belezaPura.id}/suporte`)
     const [sessao] = await s.db.select().from(supportSessions)
     if (!sessao) throw new Error('a janela não foi aberta')
 
-    const res = await s.enviar(`/suporte/${sessao.id}/encerrar`)
+    const res = await s.send(`/suporte/${sessao.id}/encerrar`)
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('Abrir suporte')
 
     const [depois] = await s.db.select().from(supportSessions)
     expect(depois?.revokedAt).toBeInstanceOf(Date)
 
-    const motivos = (
+    const reasons = (
       await s.db.select().from(authEvents).where(eq(authEvents.type, 'support'))
     ).map((e) => e.reason)
-    expect(motivos).toContain('acesso encerrado')
+    expect(reasons).toContain('acesso encerrado')
   })
 
   it('não deixa abrir suporte sem sessão', async () => {

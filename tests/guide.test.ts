@@ -6,22 +6,22 @@ import { createCompany } from '../src/platform/companies.ts'
 import { createApp } from '../src/web/app.tsx'
 import { createSeededDb, createTestDb, staffLogin } from './helpers.ts'
 
-const EQUIPE = 'equipe.beleza-pura.localhost'
+const STAFF_HOST = 'equipe.beleza-pura.localhost'
 
 async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
   const app = createApp(seeded.db, notifier)
-  const como = async (email: string) => ({
-    host: EQUIPE,
-    cookie: await staffLogin(app, notifier, EQUIPE, email),
+  const asStaffOn = async (email: string) => ({
+    host: STAFF_HOST,
+    cookie: await staffLogin(app, notifier, STAFF_HOST, email),
   })
-  return { ...seeded, notifier, app, como }
+  return { ...seeded, notifier, app, asStaffOn }
 }
 
 /** Salão recém-criado: endereço no ar, nenhum serviço, ninguém com jornada
  * cadastrada além da que vem com o dono. */
-async function salaoNovo() {
+async function freshCompany() {
   const db = createTestDb()
   const notifier = createLogNotifier(false)
   const app = createApp(db, notifier)
@@ -41,7 +41,7 @@ async function salaoNovo() {
 
 describe('aviso de pendência', () => {
   it('salão novo avisa em toda tela interna', async () => {
-    const s = await salaoNovo()
+    const s = await freshCompany()
 
     for (const path of ['/equipe', '/horarios', '/servicos']) {
       const res = await s.app.request(path, { headers: s.headers })
@@ -54,7 +54,7 @@ describe('aviso de pendência', () => {
 
   it('salão configurado não avisa nada', async () => {
     const s = await setup()
-    const headers = await s.como(s.carla.email ?? '')
+    const headers = await s.asStaffOn(s.carla.email ?? '')
 
     const res = await s.app.request('/equipe', { headers })
     expect(await res.text()).not.toContain('Falta configurar')
@@ -62,18 +62,18 @@ describe('aviso de pendência', () => {
 
   it('convite não aceito não vira tarja: não impede ninguém de marcar', async () => {
     const s = await setup()
-    const headers = await s.como(s.carla.email ?? '')
+    const headers = await s.asStaffOn(s.carla.email ?? '')
 
     // A Rafa do seed ainda não entrou no app.
     const res = await s.app.request('/equipe', { headers })
     expect(await res.text()).not.toContain('Falta configurar')
 
-    const guia = await s.app.request('/equipe/guia', { headers })
-    expect(await guia.text()).toContain('Ainda não entrou no app: Rafa Lima')
+    const guide = await s.app.request('/equipe/guia', { headers })
+    expect(await guide.text()).toContain('Ainda não entrou no app: Rafa Lima')
   })
 
   it('o aviso não aparece dentro do próprio guia', async () => {
-    const s = await salaoNovo()
+    const s = await freshCompany()
     const res = await s.app.request('/equipe/guia', { headers: s.headers })
 
     const html = await res.text()
@@ -84,7 +84,7 @@ describe('aviso de pendência', () => {
   it('quem atende não vê o aviso: não é ele que resolve', async () => {
     const s = await setup()
     await s.db.delete(services).where(eq(services.companyId, s.belezaPura.id))
-    const headers = await s.como(s.rafa.email ?? '')
+    const headers = await s.asStaffOn(s.rafa.email ?? '')
 
     const res = await s.app.request(`/agenda/${s.rafa.id}`, { headers })
     expect(await res.text()).not.toContain('Falta configurar')
@@ -93,7 +93,7 @@ describe('aviso de pendência', () => {
 
 describe('página do guia', () => {
   it('abre o passo a passo no passo da vez, com link para a tela', async () => {
-    const s = await salaoNovo()
+    const s = await freshCompany()
     const res = await s.app.request('/equipe/guia', { headers: s.headers })
 
     const html = await res.text()
@@ -106,7 +106,7 @@ describe('página do guia', () => {
 
   it('mostra o endereço para divulgar quando está tudo pronto', async () => {
     const s = await setup()
-    const headers = await s.como(s.carla.email ?? '')
+    const headers = await s.asStaffOn(s.carla.email ?? '')
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
@@ -118,7 +118,7 @@ describe('página do guia', () => {
   it('cobra jornada de quem ficou sem nenhuma', async () => {
     const s = await setup()
     await s.db.delete(providerHours).where(eq(providerHours.providerId, s.rafa.id))
-    const headers = await s.como(s.carla.email ?? '')
+    const headers = await s.asStaffOn(s.carla.email ?? '')
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
@@ -128,7 +128,7 @@ describe('página do guia', () => {
 
   it('quem atende não vê o passo a passo: montar o salão é do dono', async () => {
     const s = await setup()
-    const headers = await s.como(s.rafa.email ?? '')
+    const headers = await s.asStaffOn(s.rafa.email ?? '')
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
@@ -138,7 +138,7 @@ describe('página do guia', () => {
 
   it('explica o app para quem atende, sem as telas do dono', async () => {
     const s = await setup()
-    const headers = await s.como(s.rafa.email ?? '')
+    const headers = await s.asStaffOn(s.rafa.email ?? '')
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
@@ -150,7 +150,7 @@ describe('página do guia', () => {
 
   it('o guia exige sessão', async () => {
     const s = await setup()
-    const res = await s.app.request('/equipe/guia', { headers: { host: EQUIPE } })
+    const res = await s.app.request('/equipe/guia', { headers: { host: STAFF_HOST } })
     expect(res.status).toBe(303)
   })
 })

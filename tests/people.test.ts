@@ -29,7 +29,7 @@ async function setup() {
   return { ...seeded, notifier, app, asStaff, form }
 }
 
-const PESSOA = {
+const PERSON = {
   nome: 'Bia Souza',
   email: 'bia@salao.com.br',
   telefone: '(11) 96666-1111',
@@ -40,17 +40,17 @@ const PESSOA = {
 describe('cadastro da equipe', () => {
   it('só o dono abre a tela', async () => {
     const s = await setup()
-    const dono = await s.asStaff(s.carla.email ?? '')
-    const prestador = await s.asStaff(s.rafa.email ?? '')
+    const owner = await s.asStaff(s.carla.email ?? '')
+    const provider = await s.asStaff(s.rafa.email ?? '')
 
-    expect((await s.app.request('/equipe/pessoas', { headers: dono })).status).toBe(200)
-    expect((await s.app.request('/equipe/pessoas', { headers: prestador })).status).toBe(403)
+    expect((await s.app.request('/equipe/pessoas', { headers: owner })).status).toBe(200)
+    expect((await s.app.request('/equipe/pessoas', { headers: provider })).status).toBe(403)
   })
 
   it('adiciona alguém já com jornada', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
-    const res = await s.app.request('/equipe/pessoas', s.form(PESSOA, cookie))
+    const res = await s.app.request('/equipe/pessoas', s.form(PERSON, cookie))
     expect(res.status).toBe(200)
 
     const [bia] = await s.db.select().from(providers).where(eq(providers.name, 'Bia Souza'))
@@ -61,17 +61,17 @@ describe('cadastro da equipe', () => {
       slotMinutes: 30,
     })
 
-    const jornada = await s.db
+    const workweek = await s.db
       .select()
       .from(providerHours)
       .where(eq(providerHours.providerId, bia?.id ?? ''))
-    expect(jornada).toHaveLength(12)
+    expect(workweek).toHaveLength(12)
   })
 
   it('quem entra na equipe consegue abrir a própria agenda', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
-    await s.app.request('/equipe/pessoas', s.form(PESSOA, cookie))
+    await s.app.request('/equipe/pessoas', s.form(PERSON, cookie))
 
     const headers = await s.asStaff('bia@salao.com.br')
     const [bia] = await s.db.select().from(providers).where(eq(providers.name, 'Bia Souza'))
@@ -84,17 +84,17 @@ describe('cadastro da equipe', () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
 
-    const repetido = await s.app.request(
+    const duplicate = await s.app.request(
       '/equipe/pessoas',
-      s.form({ ...PESSOA, telefone: s.rafa.phone }, cookie),
+      s.form({ ...PERSON, telefone: s.rafa.phone }, cookie),
     )
-    expect(repetido.status).toBe(422)
-    expect(await repetido.text()).toContain('Já existe alguém com esse telefone')
+    expect(duplicate.status).toBe(422)
+    expect(await duplicate.text()).toContain('Já existe alguém com esse telefone')
 
     const slot = await s.app.request(
       '/equipe/pessoas',
       s.form(
-        { ...PESSOA, email: 'outra@salao.com.br', telefone: '11966662222', slot: '3' },
+        { ...PERSON, email: 'outra@salao.com.br', telefone: '11966662222', slot: '3' },
         cookie,
       ),
     )
@@ -142,14 +142,14 @@ describe('cadastro da equipe', () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
 
-    const eu = await s.app.request(
+    const me = await s.app.request(
       `/equipe/pessoas/${s.carla.id}/ativo`,
       s.form({ ativo: 'nao' }, cookie),
     )
-    expect(eu.status).toBe(422)
-    expect(await eu.text()).toContain('a si mesmo')
+    expect(me.status).toBe(422)
+    expect(await me.text()).toContain('a si mesmo')
 
-    const rebaixar = await s.app.request(
+    const demote = await s.app.request(
       `/equipe/pessoas/${s.carla.id}`,
       s.form(
         {
@@ -163,7 +163,7 @@ describe('cadastro da equipe', () => {
         cookie,
       ),
     )
-    expect(rebaixar.status).toBe(422)
-    expect(await rebaixar.text()).toContain('pelo menos um dono')
+    expect(demote.status).toBe(422)
+    expect(await demote.text()).toContain('pelo menos um dono')
   })
 })

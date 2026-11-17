@@ -40,11 +40,11 @@ describe('criar salão', () => {
     })
     expect(owner).toMatchObject({ role: 'owner', phone: '11955552222' })
 
-    const jornada = await db
+    const workweek = await db
       .select()
       .from(providerHours)
       .where(eq(providerHours.providerId, owner.id))
-    expect(jornada).toHaveLength(12)
+    expect(workweek).toHaveLength(12)
   })
 
   it('o dono criado já entra pela porta da equipe', async () => {
@@ -68,20 +68,20 @@ describe('criar salão', () => {
 
   it('recusa o endereço da equipe como host do salão', async () => {
     const db = createTestDb()
-    const erro = errorOf(await createCompany(db, { ...base, host: 'equipe.ines.com.br' }))
-    expect(erro).toContain('endereço do cliente')
+    const error = errorOf(await createCompany(db, { ...base, host: 'equipe.ines.com.br' }))
+    expect(error).toContain('endereço do cliente')
   })
 
   it('recusa o endereço do backoffice', async () => {
     const db = createTestDb()
-    const erro = errorOf(await createCompany(db, { ...base, host: 'backoffice.localhost' }))
-    expect(erro).toContain('backoffice')
+    const error = errorOf(await createCompany(db, { ...base, host: 'backoffice.localhost' }))
+    expect(error).toContain('backoffice')
   })
 
   it('recusa fuso que o Intl não conhece', async () => {
     const db = createTestDb()
-    const erro = errorOf(await createCompany(db, { ...base, timezone: 'America/Sao Paulo' }))
-    expect(erro).toContain('Fuso horário desconhecido')
+    const error = errorOf(await createCompany(db, { ...base, timezone: 'America/Sao Paulo' }))
+    expect(error).toContain('Fuso horário desconhecido')
   })
 
   it('explica a colisão de apelido e de endereço', async () => {
@@ -120,14 +120,14 @@ describe('editar salão', () => {
     const db = createTestDb()
     const { company } = companyOf(await createCompany(db, base))
 
-    const editado = await updateCompany(db, company.id, {
+    const updated = await updateCompany(db, company.id, {
       name: 'Studio Inês',
       host: 'studio-ines.com.br',
       slug: 'studio-ines',
       timezone: 'America/Manaus',
     })
 
-    expect(editado).toMatchObject({
+    expect(updated).toMatchObject({
       name: 'Studio Inês',
       host: 'studio-ines.com.br',
       slug: 'studio-ines',
@@ -139,31 +139,31 @@ describe('editar salão', () => {
     const db = createTestDb()
     const { company } = companyOf(await createCompany(db, base))
 
-    const editado = await updateCompany(db, company.id, {
+    const updated = await updateCompany(db, company.id, {
       name: 'Salão da Inês Prado',
       host: company.host,
       slug: company.slug,
       timezone: company.timezone,
     })
-    expect(editado).toMatchObject({ name: 'Salão da Inês Prado' })
+    expect(updated).toMatchObject({ name: 'Salão da Inês Prado' })
   })
 
   it('recusa endereço que já é de outro salão', async () => {
     const db = createTestDb()
     companyOf(await createCompany(db, base))
-    const outro = companyOf(
+    const other = companyOf(
       await createCompany(db, { ...base, name: 'Outro', host: 'outro.com.br', slug: 'outro' }),
     )
 
-    const erro = errorOf(
-      await updateCompany(db, outro.company.id, {
+    const error = errorOf(
+      await updateCompany(db, other.company.id, {
         name: 'Outro',
         host: 'ines.com.br',
         slug: 'outro',
         timezone: 'America/Sao_Paulo',
       }),
     )
-    expect(erro).toContain('Já existe um salão em')
+    expect(error).toContain('Já existe um salão em')
   })
 
   it('o salão passa a responder no endereço novo', async () => {

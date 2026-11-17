@@ -55,12 +55,12 @@ describe('catálogo de serviços', () => {
 
   it('recusa duração fora da faixa sem gravar nada', async () => {
     const s = await setup()
-    const antes = (await s.db.select().from(services)).length
+    const before = (await s.db.select().from(services)).length
     const res = await s.app.request('/servicos', form({ nome: 'Teste', duracao: '3', preco: '' }))
 
     expect(res.status).toBe(422)
     expect(await res.text()).toContain('entre 5 e 600 minutos')
-    expect((await s.db.select().from(services)).length).toBe(antes)
+    expect((await s.db.select().from(services)).length).toBe(before)
   })
 
   it('recusa preço que não dá para entender', async () => {
@@ -110,15 +110,15 @@ describe('catálogo de serviços', () => {
 
     await s.app.request(`/servicos/${s.corte.id}/ativo`, form({ ativo: 'nao' }))
 
-    const horarios = await (
+    const availability = await (
       await s.app.request(`/horarios?data=${MONDAY}`, { headers: headers() })
     ).text()
-    expect(horarios).not.toContain('Corte feminino')
+    expect(availability).not.toContain('Corte feminino')
 
-    const agenda = await (
+    const schedule = await (
       await s.app.request(`/agenda/${s.carla.id}?date=${MONDAY}`, { headers: headers() })
     ).text()
-    expect(agenda).toContain('Corte feminino')
+    expect(schedule).toContain('Corte feminino')
   })
 
   it('reativa o serviço', async () => {

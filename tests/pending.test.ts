@@ -21,9 +21,9 @@ async function setup() {
   return { ...seeded, notifier, app, headers, hx: { ...headers, 'HX-Request': 'true' } }
 }
 
-type PedidoOpts = { deadline?: Date; startMinute?: number }
+type RequestOpts = { deadline?: Date; startMinute?: number }
 
-async function pedido(seeded: Awaited<ReturnType<typeof setup>>, opts: PedidoOpts = {}) {
+async function request(seeded: Awaited<ReturnType<typeof setup>>, opts: RequestOpts = {}) {
   const start = at(opts.startMinute ?? 9 * 60)
   const [maria] = await seeded.db.select().from(customers).limit(1)
   if (!maria) throw new Error('seed sem cliente')
@@ -48,7 +48,7 @@ async function pedido(seeded: Awaited<ReturnType<typeof setup>>, opts: PedidoOpt
 describe('fila de pendentes', () => {
   it('lista o pedido com serviço, horário e prazo', async () => {
     const s = await setup()
-    await pedido(s)
+    await request(s)
     const html = await (
       await s.app.request(`/pendentes/${s.carla.id}`, { headers: s.headers })
     ).text()
@@ -59,7 +59,7 @@ describe('fila de pendentes', () => {
 
   it('confirma o pedido e avisa o cliente', async () => {
     const s = await setup()
-    const p = await pedido(s)
+    const p = await request(s)
     const res = await s.app.request(`/pendentes/${s.carla.id}/${p.id}/confirmar`, {
       method: 'POST',
       headers: s.hx,
@@ -74,7 +74,7 @@ describe('fila de pendentes', () => {
 
   it('recusa sem exigir motivo e devolve o horário para a agenda', async () => {
     const s = await setup()
-    const p = await pedido(s)
+    const p = await request(s)
     await s.app.request(`/pendentes/${s.carla.id}/${p.id}/recusar`, {
       method: 'POST',
       headers: s.hx,
@@ -84,18 +84,18 @@ describe('fila de pendentes', () => {
     expect(row?.status).toBe('declined')
     expect(s.notifier.sent.at(-1)).toMatchObject({ accepted: false })
 
-    const horarios = await (
+    const availability = await (
       await s.app.request(
         `/horarios?servico=${s.corte.id}&prestador=${s.carla.id}&data=${MONDAY}`,
         { headers: s.headers },
       )
     ).text()
-    expect(horarios).toContain('>09:00<')
+    expect(availability).toContain('>09:00<')
   })
 
   it('não deixa responder pedido que já venceu', async () => {
     const s = await setup()
-    const p = await pedido(s, { deadline: new Date(Date.now() - 60_000) })
+    const p = await request(s, { deadline: new Date(Date.now() - 60_000) })
     const res = await s.app.request(`/pendentes/${s.carla.id}/${p.id}/confirmar`, {
       method: 'POST',
       headers: s.hx,
@@ -110,7 +110,7 @@ describe('fila de pendentes', () => {
 describe('expiração', () => {
   it('expira o pedido vencido ao abrir qualquer tela e avisa o cliente', async () => {
     const s = await setup()
-    await pedido(s, { deadline: new Date(Date.now() - 60_000) })
+    await request(s, { deadline: new Date(Date.now() - 60_000) })
     await s.app.request('/', { headers: s.headers })
 
     const [row] = await s.db.select().from(appointments)
@@ -120,7 +120,7 @@ describe('expiração', () => {
 
   it('também roda pelo comando, sem ninguém abrir o app', async () => {
     const s = await setup()
-    await pedido(s, { deadline: new Date(Date.now() - 60_000) })
+    await request(s, { deadline: new Date(Date.now() - 60_000) })
     const count = await expirePending(s.db, s.notifier)
     expect(count).toBe(1)
     expect(await expirePending(s.db, s.notifier)).toBe(0)
@@ -128,7 +128,7 @@ describe('expiração', () => {
 
   it('não mexe em pedido dentro do prazo', async () => {
     const s = await setup()
-    await pedido(s)
+    await request(s)
     expect(await expirePending(s.db, s.notifier)).toBe(0)
   })
 })
@@ -136,7 +136,7 @@ describe('expiração', () => {
 describe('folga do dia', () => {
   it('cancela o que estava marcado, avisa para remarcar e fecha o dia', async () => {
     const s = await setup()
-    await pedido(s)
+    await request(s)
     const res = await s.app.request(`/agenda/${s.carla.id}/folga?date=${MONDAY}`, {
       method: 'POST',
       headers: s.hx,
@@ -148,10 +148,10 @@ describe('folga do dia', () => {
     expect(html).not.toContain('Bloquear 09:00')
     expect(s.notifier.sent.at(-1)).toMatchObject({ kind: 'reschedule-needed' })
 
-    const horarios = await (
+    const availability = await (
       await s.app.request(`/horarios?servico=${s.corte.id}&data=${MONDAY}`, { headers: s.headers })
     ).text()
-    expect(horarios).toContain('Nenhum horário disponível')
+    expect(availability).toContain('Nenhum horário disponível')
   })
 
   it('recusa folga em dia sem expediente', async () => {

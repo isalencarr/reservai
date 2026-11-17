@@ -30,9 +30,9 @@ describe('schemeVariables', () => {
   })
 
   it('o tom escuro muda a superfície', () => {
-    const claro = schemeVariables(DEFAULT_SEED, false)
-    const escuro = schemeVariables(DEFAULT_SEED, true)
-    expect(claro).not.toBe(escuro)
+    const light = schemeVariables(DEFAULT_SEED, false)
+    const dark = schemeVariables(DEFAULT_SEED, true)
+    expect(light).not.toBe(dark)
   })
 
   it('sementes diferentes dão cores diferentes', () => {

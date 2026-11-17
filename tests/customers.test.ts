@@ -65,11 +65,11 @@ describe('porta da equipe', () => {
     const sent = s.notifier.sent.at(-1)
     if (sent?.kind !== 'magic-link') throw new Error('sem link')
 
-    const primeira = await s.app.request(sent.url, { headers: { host: HOST } })
-    expect(primeira.headers.getSetCookie().length).toBeGreaterThan(0)
+    const first = await s.app.request(sent.url, { headers: { host: HOST } })
+    expect(first.headers.getSetCookie().length).toBeGreaterThan(0)
 
-    const segunda = await s.app.request(sent.url, { headers: { host: HOST } })
-    expect(segunda.headers.getSetCookie()).toHaveLength(0)
+    const second = await s.app.request(sent.url, { headers: { host: HOST } })
+    expect(second.headers.getSetCookie()).toHaveLength(0)
   })
 
   it('a porta antiga por código some: o caminho vira pedido de login', async () => {
@@ -117,12 +117,12 @@ describe('acesso por papel', () => {
     })
     const issued = s.notifier.sent.at(-1)
     if (issued?.kind !== 'access-code') throw new Error('sem código')
-    const entrada = await s.app.request('/entrar/codigo', {
+    const entry = await s.app.request('/entrar/codigo', {
       method: 'POST',
       headers: { host: CLIENT_HOST, 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ telefone: '11977773333', codigo: issued.code }),
     })
-    const cookie = entrada.headers.get('set-cookie')?.split(';')[0] ?? ''
+    const cookie = entry.headers.get('set-cookie')?.split(';')[0] ?? ''
 
     const res = await s.app.request('/clientes', { headers: { host: HOST, cookie } })
     expect(res.status).toBe(303)
@@ -157,11 +157,11 @@ describe('carteira de clientes', () => {
     const html = await (await s.app.request('/clientes', { headers })).text()
 
     expect(html).toContain('João Prado')
-    const doOutroSalao = await s.db
+    const fromOtherCompany = await s.db
       .select()
       .from(customers)
       .where(eq(customers.companyId, s.studioNorte.id))
-    expect(doOutroSalao).toHaveLength(1)
+    expect(fromOtherCompany).toHaveLength(1)
     expect(html.match(/Maria Silva/g)).toHaveLength(1)
   })
 
@@ -169,13 +169,13 @@ describe('carteira de clientes', () => {
     const s = await setup()
     const headers = await s.asStaff(s.carla.email ?? '')
 
-    const porNome = await (await s.app.request('/clientes?q=joão', { headers })).text()
-    expect(porNome).toContain('João Prado')
-    expect(porNome).not.toContain('Maria Silva')
+    const byName = await (await s.app.request('/clientes?q=joão', { headers })).text()
+    expect(byName).toContain('João Prado')
+    expect(byName).not.toContain('Maria Silva')
 
-    const porFone = await (await s.app.request('/clientes?q=(11) 97777-0001', { headers })).text()
-    expect(porFone).toContain('Maria Silva')
-    expect(porFone).not.toContain('João Prado')
+    const byPhone = await (await s.app.request('/clientes?q=(11) 97777-0001', { headers })).text()
+    expect(byPhone).toContain('Maria Silva')
+    expect(byPhone).not.toContain('João Prado')
   })
 
   it('abre o histórico do cliente no modal', async () => {

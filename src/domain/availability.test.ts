@@ -11,7 +11,7 @@ const hours = [
   { weekday: 1, startMinute: 13 * 60, endMinute: 18 * 60 },
 ]
 const working = workingIntervals(hours, DATE, SP)
-const ONTEM = new Date('2026-11-15T12:00:00Z')
+const YESTERDAY = new Date('2026-11-15T12:00:00Z')
 
 const starts = (over: Partial<Parameters<typeof availableStarts>[0]>) =>
   availableStarts({
@@ -19,7 +19,7 @@ const starts = (over: Partial<Parameters<typeof availableStarts>[0]>) =>
     busy: [],
     durationMinutes: 60,
     slotMinutes: 60,
-    now: ONTEM,
+    now: YESTERDAY,
     minLeadMinutes: 60,
     ...over,
   }).map((d) => formatTime(d, SP))

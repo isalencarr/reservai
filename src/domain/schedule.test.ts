@@ -24,11 +24,11 @@ describe('workingIntervals', () => {
   })
 
   it('junta faixas coladas', () => {
-    const colado = [
+    const touching = [
       { weekday: 1, startMinute: 9 * 60, endMinute: 12 * 60 },
       { weekday: 1, startMinute: 12 * 60, endMinute: 15 * 60 },
     ]
-    expect(workingIntervals(colado, DATE, SP)).toHaveLength(1)
+    expect(workingIntervals(touching, DATE, SP)).toHaveLength(1)
   })
 })
 

@@ -16,13 +16,13 @@ async function setup() {
     host: HOST,
     cookie: await staffLogin(app, notifier, HOST, email),
   })
-  const pedirLink = (email: string) =>
+  const askForLink = (email: string) =>
     app.request('/equipe/entrar', {
       method: 'POST',
       headers: FORM,
       body: new URLSearchParams({ email }),
     })
-  return { ...seeded, notifier, app, asStaff, pedirLink }
+  return { ...seeded, notifier, app, asStaff, askForLink }
 }
 
 describe('registro de acesso', () => {
@@ -41,13 +41,13 @@ describe('registro de acesso', () => {
     const headers = await s.asStaff(s.carla.email ?? '')
     await s.app.request('/equipe/sair', { method: 'POST', headers })
 
-    const tipos = (await s.db.select().from(authEvents)).map((e) => e.type)
-    expect(tipos).toContain('logout')
+    const kinds = (await s.db.select().from(authEvents)).map((e) => e.type)
+    expect(kinds).toContain('logout')
   })
 
   it('grava tentativa de quem não é da equipe, sem mandar link', async () => {
     const s = await setup()
-    await s.pedirLink('invasor@fora.com')
+    await s.askForLink('invasor@fora.com')
 
     const [evento] = await s.db.select().from(authEvents)
     expect(evento).toMatchObject({ type: 'login_failed', reason: 'e-mail desconhecido' })

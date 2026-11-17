@@ -79,29 +79,29 @@ describe('passo a passo de setup', () => {
   })
 
   it('salão novo começa pelo serviço, e o resto espera', () => {
-    const novo: SetupData = {
+    const fresh: SetupData = {
       activeServices: 0,
       activeProviders: 1,
       servicesWithoutProvider: [],
       providersWithoutHours: [],
       pendingInvites: [],
     }
-    expect(stateOf(novo, 'services')).toBe('now')
-    expect(stateOf(novo, 'assignments')).toBe('later')
-    expect(stateOf(novo, 'publish')).toBe('later')
+    expect(stateOf(fresh, 'services')).toBe('now')
+    expect(stateOf(fresh, 'assignments')).toBe('later')
+    expect(stateOf(fresh, 'publish')).toBe('later')
   })
 
   it('o passo cumprido fica à vista, com o que já existe', () => {
     const steps = listSetupSteps(ready)
-    const servicos = steps.find((step) => step.key === 'services')
-    expect(servicos?.state).toBe('done')
-    expect(servicos?.note).toBe('3 serviços ativos.')
+    const services = steps.find((step) => step.key === 'services')
+    expect(services?.state).toBe('done')
+    expect(services?.note).toBe('3 serviços ativos.')
   })
 
   it('convidar equipe não bloqueia: quem atende sozinho segue em frente', () => {
-    const sozinho = { ...ready, activeProviders: 1 }
-    expect(stateOf(sozinho, 'team')).toBe('optional')
-    expect(stateOf(sozinho, 'publish')).toBe('now')
+    const alone = { ...ready, activeProviders: 1 }
+    expect(stateOf(alone, 'team')).toBe('optional')
+    expect(stateOf(alone, 'publish')).toBe('now')
   })
 
   it('convite não aceito aparece como nota do passo da equipe', () => {
@@ -117,8 +117,8 @@ describe('passo a passo de setup', () => {
   })
 
   it('quem executa só é cobrado depois de existir serviço', () => {
-    const vazio = { ...ready, activeServices: 0, servicesWithoutProvider: [] }
-    expect(stateOf(vazio, 'assignments')).toBe('later')
+    const empty = { ...ready, activeServices: 0, servicesWithoutProvider: [] }
+    expect(stateOf(empty, 'assignments')).toBe('later')
   })
 
   it('divulgar é o último passo, e só chega a vez quando o resto está pronto', () => {
@@ -127,7 +127,7 @@ describe('passo a passo de setup', () => {
   })
 
   it('nenhum passo fica sem tela, tirando o de divulgar', () => {
-    const semAcao = listSetupSteps(ready).filter((step) => !step.action)
-    expect(semAcao.map((step) => step.key)).toEqual(['publish'])
+    const withoutAction = listSetupSteps(ready).filter((step) => !step.action)
+    expect(withoutAction.map((step) => step.key)).toEqual(['publish'])
   })
 })

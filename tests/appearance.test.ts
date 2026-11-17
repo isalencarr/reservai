@@ -8,7 +8,7 @@ import { createSeededDb, staffLogin } from './helpers.ts'
 
 const HOST = 'equipe.beleza-pura.localhost'
 const CLIENT_HOST = 'beleza-pura.localhost'
-const azul = PALETTES.find((p) => p.key === 'azul')?.seed ?? ''
+const blue = PALETTES.find((p) => p.key === 'azul')?.seed ?? ''
 
 async function setup() {
   const seeded = await createSeededDb()
@@ -18,61 +18,61 @@ async function setup() {
     host: HOST,
     cookie: await staffLogin(app, notifier, HOST, email),
   })
-  const salvar = (campo: string, valor: string, cookie: string) =>
+  const save = (campo: string, valor: string, cookie: string) =>
     app.request('/equipe/aparencia', {
       method: 'POST',
       headers: { host: HOST, cookie, 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ [campo]: valor }),
     })
-  return { ...seeded, notifier, app, asStaff, salvar }
+  return { ...seeded, notifier, app, asStaff, save }
 }
 
 describe('aparência', () => {
   it('só o dono abre a tela', async () => {
     const s = await setup()
-    const dono = await s.asStaff(s.carla.email ?? '')
-    const prestador = await s.asStaff(s.rafa.email ?? '')
+    const owner = await s.asStaff(s.carla.email ?? '')
+    const provider = await s.asStaff(s.rafa.email ?? '')
 
-    expect((await s.app.request('/equipe/aparencia', { headers: dono })).status).toBe(200)
-    expect((await s.app.request('/equipe/aparencia', { headers: prestador })).status).toBe(403)
+    expect((await s.app.request('/equipe/aparencia', { headers: owner })).status).toBe(200)
+    expect((await s.app.request('/equipe/aparencia', { headers: provider })).status).toBe(403)
   })
 
   it('troca a cor e isso muda a página do cliente', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
-    const antes = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
+    const before = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
 
-    const res = await s.salvar('cor', azul, cookie)
+    const res = await s.save('cor', blue, cookie)
     expect(res.status).toBe(303)
 
     const [company] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
-    expect(company?.themeSeed).toBe(azul)
+    expect(company?.themeSeed).toBe(blue)
 
     const depois = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
     expect(depois).toContain('--md-primary:')
-    expect(depois).not.toBe(antes)
+    expect(depois).not.toBe(before)
   })
 
   it('o tom escolhido define o que o cliente vê', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
 
-    await s.salvar('tom', 'dark', cookie)
-    const escuro = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
-    expect(escuro).toContain('color-scheme: dark')
-    expect(escuro).not.toContain('@media (prefers-color-scheme: dark)')
+    await s.save('tom', 'dark', cookie)
+    const dark = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
+    expect(dark).toContain('color-scheme: dark')
+    expect(dark).not.toContain('@media (prefers-color-scheme: dark)')
 
-    await s.salvar('tom', 'auto', cookie)
-    const automatico = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
-    expect(automatico).toContain('@media (prefers-color-scheme: dark)')
+    await s.save('tom', 'auto', cookie)
+    const automatic = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
+    expect(automatic).toContain('@media (prefers-color-scheme: dark)')
   })
 
   it('recusa cor fora da lista e tom inventado', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
 
-    expect((await s.salvar('cor', '#ff0000', cookie)).status).toBe(422)
-    expect((await s.salvar('tom', 'sepia', cookie)).status).toBe(422)
+    expect((await s.save('cor', '#ff0000', cookie)).status).toBe(422)
+    expect((await s.save('tom', 'sepia', cookie)).status).toBe(422)
 
     const [company] = await s.db.select().from(companies).where(eq(companies.id, s.belezaPura.id))
     expect(company?.themeSeed).toBe('#6750A4')
@@ -81,12 +81,12 @@ describe('aparência', () => {
   it('cada salão tem o seu tema', async () => {
     const s = await setup()
     const { cookie } = await s.asStaff(s.carla.email ?? '')
-    await s.salvar('cor', azul, cookie)
+    await s.save('cor', blue, cookie)
 
-    const outro = await (
+    const other = await (
       await s.app.request('/', { headers: { host: 'studio-norte.localhost' } })
     ).text()
-    const nosso = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
-    expect(outro).not.toBe(nosso)
+    const ours = await (await s.app.request('/', { headers: { host: CLIENT_HOST } })).text()
+    expect(other).not.toBe(ours)
   })
 })

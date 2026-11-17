@@ -111,16 +111,16 @@ describe('pedido de horário', () => {
     const s = await setup()
     const cookie = await login(s)
 
-    const passo1 = await (await get(s, '/reserva', cookie)).text()
-    expect(passo1).toContain('Corte feminino')
+    const step1 = await (await get(s, '/reserva', cookie)).text()
+    expect(step1).toContain('Corte feminino')
 
-    const passo2 = await (await get(s, `/reserva?servico=${s.corte.id}`, cookie)).text()
-    expect(passo2).toContain('Carla Mendes')
+    const step2 = await (await get(s, `/reserva?servico=${s.corte.id}`, cookie)).text()
+    expect(step2).toContain('Carla Mendes')
 
-    const passo3 = await (
+    const step3 = await (
       await get(s, `/reserva?servico=${s.corte.id}&prestador=${s.carla.id}&data=${MONDAY}`, cookie)
     ).text()
-    expect(passo3).toContain('>09:00<')
+    expect(step3).toContain('>09:00<')
 
     const res = await s.app.request(
       '/reserva',
@@ -129,9 +129,9 @@ describe('pedido de horário', () => {
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('aguardando confirmação')
 
-    const [pedido] = await s.db.select().from(appointments)
-    expect(pedido).toMatchObject({ status: 'pending', providerId: s.carla.id })
-    expect(pedido?.confirmDeadlineAt).not.toBeNull()
+    const [request] = await s.db.select().from(appointments)
+    expect(request).toMatchObject({ status: 'pending', providerId: s.carla.id })
+    expect(request?.confirmDeadlineAt).not.toBeNull()
     expect(s.notifier.sent.at(-1)).toMatchObject({
       kind: 'pending-request',
       to: s.carla.phone,
@@ -194,7 +194,7 @@ describe('pedido de horário', () => {
 })
 
 describe('meus horários', () => {
-  async function comPedido(s: App, startMinute = 9 * 60) {
+  async function withRequest(s: App, startMinute = 9 * 60) {
     const [row] = await s.db
       .insert(appointments)
       .values({
@@ -217,7 +217,7 @@ describe('meus horários', () => {
   it('lista o agendamento com profissional e situação', async () => {
     const s = await setup()
     const cookie = await login(s)
-    await comPedido(s)
+    await withRequest(s)
 
     const html = await (await get(s, '/reserva/meus', cookie)).text()
     expect(html).toContain('Carla Mendes')
@@ -228,12 +228,12 @@ describe('meus horários', () => {
   it('cancela com mais de duas horas de antecedência e avisa o profissional', async () => {
     const s = await setup()
     const cookie = await login(s)
-    const pedido = await comPedido(s)
+    const request = await withRequest(s)
 
-    const res = await s.app.request(`/reserva/${pedido.id}/cancelar`, form({}, cookie))
+    const res = await s.app.request(`/reserva/${request.id}/cancelar`, form({}, cookie))
     expect(res.status).toBe(200)
 
-    const [row] = await s.db.select().from(appointments).where(eq(appointments.id, pedido.id))
+    const [row] = await s.db.select().from(appointments).where(eq(appointments.id, request.id))
     expect(row?.status).toBe('cancelled')
     expect(s.notifier.sent.at(-1)).toMatchObject({
       kind: 'customer-cancelled',
