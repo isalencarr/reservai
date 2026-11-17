@@ -25,6 +25,15 @@ function form(values: Record<string, string | string[]>) {
   }
 }
 
+/** O botão manda os campos por hx-vals. Se a tela e a rota discordarem do nome,
+ * nada falha em voz alta: o serviço só não desativa. */
+function hxVals(html: string, label: string): Record<string, string> {
+  const upToLabel = html.slice(0, html.indexOf(label))
+  const found = upToLabel.match(/hx-vals="([^"]*)"(?![\s\S]*hx-vals=)/)
+  if (!found?.[1]) throw new Error(`sem hx-vals no botão ${label}`)
+  return JSON.parse(found[1].replaceAll('&quot;', '"'))
+}
+
 /** O catálogo é do dono, então os testes entram como Carla. */
 async function setup() {
   const seeded = await createSeededDb()
@@ -116,7 +125,7 @@ describe('catálogo de serviços', () => {
     expect(availability).not.toContain('Corte feminino')
 
     const schedule = await (
-      await s.app.request(`/agenda/${s.carla.id}?date=${MONDAY}`, { headers: headers() })
+      await s.app.request(`/agenda/${s.carla.id}?data=${MONDAY}`, { headers: headers() })
     ).text()
     expect(schedule).toContain('Corte feminino')
   })
@@ -198,5 +207,22 @@ describe('tela do catálogo', () => {
     ).text()
 
     expect(html).not.toContain('<div class="overlay">')
+  })
+})
+
+describe('o que a tela manda e a rota lê', () => {
+  it('reativar serviço funciona com o payload que a própria tela monta', async () => {
+    const s = await setup()
+    await s.app.request(`/servicos/${s.corte.id}/ativo`, form({ ativo: 'nao' }))
+
+    // Reativar é o caso que separa: campo com nome errado chega vazio, e vazio
+    // significa desativar, então desativar passaria mesmo quebrado.
+    const screen = await (
+      await s.app.request(`/servicos?editar=${s.corte.id}`, { headers: headers() })
+    ).text()
+    await s.app.request(`/servicos/${s.corte.id}/ativo`, form(hxVals(screen, 'Reativar')))
+
+    const [row] = await s.db.select().from(services).where(eq(services.id, s.corte.id))
+    expect(row?.active).toBe(true)
   })
 })

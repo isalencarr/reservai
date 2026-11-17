@@ -10,6 +10,7 @@ import { layoutProps, type StaffEnv, staffMiddleware } from '../staff.ts'
 import { requireArea } from '../tenant.ts'
 import { Availability, type AvailabilityProps } from '../views/availability.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
+import { WIRE } from '../wire.ts'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -28,13 +29,13 @@ export function availabilityRoutes({ db, auth }: Deps) {
   app.get('/', async (c: Context<StaffEnv>) => {
     const company = c.get('company')
     const timeZone = company.timezone
-    const date = readDate(c.req.query('data'), timeZone)
+    const date = readDate(c.req.query(WIRE.date), timeZone)
     const services = await serviceRepo.listActive(company.id)
 
-    const wanted = c.req.query('servico')
+    const wanted = c.req.query(WIRE.service)
     const service = services.find((s) => s.id === wanted) ?? services[0]
     const providers = service ? await serviceRepo.providersFor(company.id, service.id) : []
-    const chosen = c.req.query('prestador')
+    const chosen = c.req.query(WIRE.provider)
     const provider = providers.find((p) => p.id === chosen) ?? providers[0]
 
     let starts: Date[] = []

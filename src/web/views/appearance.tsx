@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Company } from '../../db/schema.ts'
 import { PALETTES, type ThemeMode } from '../../domain/theme.ts'
+import { WIRE } from '../wire.ts'
 
 export type AppearanceProps = { company: Company }
 
@@ -27,7 +28,7 @@ export const Appearance: FC<AppearanceProps> = ({ company }) => (
           <li key={palette.key}>
             <button
               type="submit"
-              name="cor"
+              name={WIRE.color}
               value={palette.seed}
               class={`palette ${palette.seed.toLowerCase() === company.themeSeed.toLowerCase() ? 'on' : ''}`}
             >
@@ -44,7 +45,7 @@ export const Appearance: FC<AppearanceProps> = ({ company }) => (
           <li key={mode.value}>
             <button
               type="submit"
-              name="tom"
+              name={WIRE.mode}
               value={mode.value}
               class={`btn mode ${mode.value === company.themeMode ? 'on' : ''}`}
               title={mode.hint}

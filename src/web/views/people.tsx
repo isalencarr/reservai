@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
 import { formatPhone } from '../../domain/phone.ts'
+import { NO, WIRE, YES } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type PeopleProps = {
@@ -15,13 +16,13 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
     <div class="fields">
       <label>
         Nome
-        <input type="text" name="nome" required value={person?.name ?? ''} />
+        <input type="text" name={WIRE.name} required value={person?.name ?? ''} />
       </label>
       <label>
         E-mail
         <input
           type="email"
-          name="email"
+          name={WIRE.email}
           required
           autocomplete="email"
           placeholder="nome@salao.com.br"
@@ -32,7 +33,7 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
         Telefone com DDD
         <input
           type="tel"
-          name="telefone"
+          name={WIRE.phone}
           required
           inputmode="numeric"
           placeholder="(11) 98888-0001"
@@ -41,7 +42,7 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
       </label>
       <label>
         Papel
-        <select name="papel">
+        <select name={WIRE.role}>
           <option value="provider" selected={person?.role !== 'owner'}>
             Prestador
           </option>
@@ -56,7 +57,7 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
         Slot (min)
         <input
           type="number"
-          name="slot"
+          name={WIRE.slot}
           min="5"
           max="240"
           step="5"
@@ -67,7 +68,7 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
         Antecedência mínima (min)
         <input
           type="number"
-          name="antecedencia"
+          name={WIRE.leadMinutes}
           min="0"
           max="1440"
           step="15"
@@ -104,7 +105,7 @@ const EditRow: FC<{ person: Provider; me: Provider; error?: string }> = ({ perso
               type="button"
               class="btn danger"
               hx-post={`/equipe/pessoas/${person.id}/ativo`}
-              hx-vals={JSON.stringify({ active: person.active ? 'nao' : 'sim' })}
+              hx-vals={JSON.stringify({ [WIRE.active]: person.active ? NO : YES })}
             >
               {person.active ? 'Tirar da equipe' : 'Trazer de volta'}
             </button>

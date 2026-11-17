@@ -4,6 +4,7 @@ import { canCustomerCancel } from '../../domain/booking.ts'
 import { formatPrice } from '../../domain/money.ts'
 import { formatLongDate, formatTime, formatWhen, type LocalDate } from '../../domain/time.ts'
 import type { CustomerEntry } from '../../repos/appointments.ts'
+import { WIRE } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type DayOption = { date: LocalDate; label: string; weekday: string }
@@ -168,9 +169,9 @@ export const Booking: FC<BookingProps> = (props) => {
               O profissional tem até 24 horas para confirmar. Você recebe uma mensagem com a
               resposta.
             </p>
-            <input type="hidden" name="servico" value={service.id} />
-            <input type="hidden" name="prestador" value={provider.id} />
-            <input type="hidden" name="hora" value={chosen.toISOString()} />
+            <input type="hidden" name={WIRE.service} value={service.id} />
+            <input type="hidden" name={WIRE.provider} value={provider.id} />
+            <input type="hidden" name={WIRE.time} value={chosen.toISOString()} />
             <button type="submit" class="btn filled">
               <Icon name="check" />
               Pedir este horário

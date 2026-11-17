@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Provider, Service } from '../../db/schema.ts'
 import { formatPrice } from '../../domain/money.ts'
+import { NO, WIRE, YES } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type ServiceRow = { service: Service; providerIds: string[] }
@@ -17,7 +18,7 @@ const Equipe: FC<{ providers: Provider[]; marked: string[] }> = ({ providers, ma
     <legend>Quem executa</legend>
     {providers.map((p) => (
       <label key={p.id}>
-        <input type="checkbox" name="prestador" value={p.id} checked={marked.includes(p.id)} />
+        <input type="checkbox" name={WIRE.provider} value={p.id} checked={marked.includes(p.id)} />
         {p.name}
       </label>
     ))}
@@ -30,7 +31,7 @@ const Fields: FC<{ service?: Service }> = ({ service }) => (
       Nome
       <input
         type="text"
-        name="nome"
+        name={WIRE.name}
         required
         placeholder="Corte feminino"
         value={service?.name ?? ''}
@@ -40,7 +41,7 @@ const Fields: FC<{ service?: Service }> = ({ service }) => (
       Duração (min)
       <input
         type="number"
-        name="duracao"
+        name={WIRE.duration}
         required
         min="5"
         max="600"
@@ -52,7 +53,7 @@ const Fields: FC<{ service?: Service }> = ({ service }) => (
       Preço
       <input
         type="text"
-        name="preco"
+        name={WIRE.price}
         placeholder="90,00"
         inputmode="decimal"
         value={service ? formatPrice(service.priceCents) : ''}
@@ -84,7 +85,7 @@ const EditRow: FC<{ row: ServiceRow; providers: Provider[]; error?: string }> = 
             type="button"
             class="btn danger"
             hx-post={`/servicos/${row.service.id}/ativo`}
-            hx-vals={JSON.stringify({ active: row.service.active ? 'nao' : 'sim' })}
+            hx-vals={JSON.stringify({ [WIRE.active]: row.service.active ? NO : YES })}
           >
             {row.service.active ? 'Desativar' : 'Reativar'}
           </button>

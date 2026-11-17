@@ -12,6 +12,7 @@ import {
 import { requireArea } from '../tenant.ts'
 import { Customers, type CustomersProps } from '../views/customers.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
+import { WIRE } from '../wire.ts'
 
 export function customerRoutes({ db, auth }: Deps) {
   const customerRepo = createCustomerRepo(db)
@@ -25,10 +26,10 @@ export function customerRoutes({ db, auth }: Deps) {
 
   app.get('/', async (c: Context<StaffEnv>) => {
     const company = c.get('company')
-    const query = c.req.query('q') ?? ''
+    const query = c.req.query(WIRE.query) ?? ''
     const items = await customerRepo.list(company.id, query)
 
-    const wanted = c.req.query('ver')
+    const wanted = c.req.query(WIRE.view)
     const customer = items.find((item) => item.id === wanted)
     const viewing = customer
       ? { customer, history: await appointmentRepo.listByCustomer(company.id, customer.id) }

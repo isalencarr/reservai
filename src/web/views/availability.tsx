@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { Provider, Service } from '../../db/schema.ts'
 import { formatLongDate, formatTime, type LocalDate } from '../../domain/time.ts'
+import { WIRE } from '../wire.ts'
 
 export type AvailabilityProps = {
   services: Service[]
@@ -37,7 +38,7 @@ export const Availability: FC<AvailabilityProps> = ({
     <form id="filters" class="filters">
       <label>
         Serviço
-        <select name="servico">
+        <select name={WIRE.service}>
           {services.map((s) => (
             <option key={s.id} value={s.id} selected={s.id === service?.id}>
               {s.name} · {s.durationMinutes} min{money(s.priceCents)}
@@ -48,7 +49,7 @@ export const Availability: FC<AvailabilityProps> = ({
 
       <label>
         Profissional
-        <select name="prestador">
+        <select name={WIRE.provider}>
           {providers.map((p) => (
             <option key={p.id} value={p.id} selected={p.id === provider?.id}>
               {p.name}
@@ -59,7 +60,7 @@ export const Availability: FC<AvailabilityProps> = ({
 
       <label>
         Dia
-        <input type="date" name="data" value={date} />
+        <input type="date" name={WIRE.date} value={date} />
       </label>
     </form>
 

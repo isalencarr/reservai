@@ -3,6 +3,21 @@
 Uma seção por entrega, da mais nova para a mais velha. O que mudou para quem
 usa — a lista de arquivos está no histórico do git.
 
+## 3.3 — Um lugar só para os nomes da rede — 2026-11-17
+
+- O código passou a ser todo em inglês. O que a pessoa lê e digita continua em
+  português: texto de tela, caminho de rota, campo de formulário e parâmetro de
+  URL.
+- Esses nomes de rede ficavam espalhados por rota e por tela, cada lado
+  escrevendo o seu. Agora moram em `src/web/wire.ts`, e tela e rota leem do
+  mesmo lugar.
+- Isso achou um defeito: o botão de desativar serviço e o de tirar da equipe
+  mandavam `active` e a rota lia `ativo`. Desativar funcionava por acaso; trazer
+  de volta nunca funcionou. Corrigido, com teste que usa o que a própria tela
+  monta.
+- A agenda da equipe usava `?date=` e as telas do cliente `?data=` para a mesma
+  coisa. Virou `?data=` em todo lugar.
+
 ## 3.2 — Passo a passo da montagem — 2026-11-17
 
 - O guia deixou de listar só o que falta e passou a mostrar o caminho inteiro,

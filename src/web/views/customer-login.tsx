@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import { formatPhone } from '../../domain/phone.ts'
+import { WIRE } from '../wire.ts'
 
 export type EntrarProps = {
   next: string
@@ -17,13 +18,13 @@ export const Entrar: FC<EntrarProps> = ({ next, error, phone }) => (
     {phone ? (
       <form class="card service-form" hx-post="/entrar/codigo">
         <p class="muted">Enviamos um código para {formatPhone(phone)}. Ele vale por 10 minutes.</p>
-        <input type="hidden" name="telefone" value={phone} />
-        <input type="hidden" name="next" value={next} />
+        <input type="hidden" name={WIRE.phone} value={phone} />
+        <input type="hidden" name={WIRE.next} value={next} />
         <label>
           Código
           <input
             type="text"
-            name="codigo"
+            name={WIRE.code}
             inputmode="numeric"
             autocomplete="one-time-code"
             maxlength={6}
@@ -42,16 +43,16 @@ export const Entrar: FC<EntrarProps> = ({ next, error, phone }) => (
     ) : (
       <form class="card service-form" hx-post="/entrar">
         <p class="muted">Precisamos do seu nome e telefone para guardar o agendamento.</p>
-        <input type="hidden" name="next" value={next} />
+        <input type="hidden" name={WIRE.next} value={next} />
         <label>
           Nome
-          <input type="text" name="nome" required autocomplete="name" />
+          <input type="text" name={WIRE.name} required autocomplete="name" />
         </label>
         <label>
           Telefone com DDD
           <input
             type="tel"
-            name="telefone"
+            name={WIRE.phone}
             required
             inputmode="numeric"
             autocomplete="tel"

@@ -102,6 +102,8 @@ HTMX; o `@material/web` do Google está em modo de manutenção desde 2024.
 - `src/db/` — schema Drizzle, migrations e conexão. Trocar de banco mexe só em `client.ts` e no schema.
 - `src/repos/` — acesso ao banco atrás de uma interface por entidade.
 - `src/web/` — servidor Hono, resolução do salão pelo domínio, rotas e telas (HTMX).
+- `src/web/wire.ts` — os nomes que atravessam a rede (campo de formulário, parâmetro
+  de URL) num lugar só. Ficam em português; o resto do código só vê inglês.
 - `src/web/backoffice/` — o app da plataforma. Host próprio, sem salão no
   contexto: nenhuma rota daqui enxerga `company`.
 - `src/repos/setup.ts` — consulta de leitura que cruza serviços, equipe e

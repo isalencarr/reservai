@@ -8,6 +8,7 @@ import { canManage, layoutProps, type StaffEnv, staffMiddleware } from '../staff
 import { requireArea } from '../tenant.ts'
 import { DayView, type DayViewProps } from '../views/day-view.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
+import { text, WIRE } from '../wire.ts'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -15,10 +16,9 @@ function readDate(raw: string | undefined, timeZone: string): LocalDate {
   return raw && DATE_PATTERN.test(raw) ? raw : localDate(new Date(), timeZone)
 }
 
-function readInstant(raw: unknown): Date | undefined {
-  if (typeof raw !== 'string') return undefined
+function readInstant(raw: string): Date | undefined {
   const value = new Date(raw)
-  return Number.isNaN(value.getTime()) ? undefined : value
+  return raw === '' || Number.isNaN(value.getTime()) ? undefined : value
 }
 
 export function scheduleRoutes({ db, notifier, auth }: Deps) {
@@ -75,7 +75,7 @@ export function scheduleRoutes({ db, notifier, auth }: Deps) {
     if (!canManage(c.get('staff'), c.req.param('providerId'))) {
       return c.text('Essa agenda não é sua.', 403)
     }
-    const date = readDate(c.req.query('date'), company.timezone)
+    const date = readDate(c.req.query(WIRE.date), company.timezone)
     const props = await dayView(company.id, company.timezone, c.req.param('providerId'), date)
     if (!props) return c.notFound()
     return render(c, props)
@@ -86,8 +86,8 @@ export function scheduleRoutes({ db, notifier, auth }: Deps) {
     const providerId = c.req.param('providerId')
     if (!canManage(c.get('staff'), providerId)) return c.text('Essa agenda não é sua.', 403)
     const body = await c.req.parseBody()
-    const startsAt = readInstant(body.startsAt)
-    const endsAt = readInstant(body.endsAt)
+    const startsAt = readInstant(text(body, WIRE.startsAt))
+    const endsAt = readInstant(text(body, WIRE.endsAt))
     if (!startsAt || !endsAt || endsAt <= startsAt) return c.text('Horário inválido.', 400)
 
     const provider = await providerRepo.findById(company.id, providerId)
@@ -103,10 +103,10 @@ export function scheduleRoutes({ db, notifier, auth }: Deps) {
       endsAt,
       status: 'confirmed',
       origin: 'external',
-      note: typeof body.note === 'string' && body.note ? body.note : 'Bloqueado',
+      note: text(body, WIRE.note) || 'Bloqueado',
     })
 
-    const date = readDate(c.req.query('date'), company.timezone)
+    const date = readDate(c.req.query(WIRE.date), company.timezone)
     const props = await dayView(company.id, company.timezone, provider.id, date)
     if (!props) return c.notFound()
     return render(c, props)
@@ -124,7 +124,7 @@ export function scheduleRoutes({ db, notifier, auth }: Deps) {
     }
     await appointmentRepo.remove(company.id, existing.id)
 
-    const date = readDate(c.req.query('date'), company.timezone)
+    const date = readDate(c.req.query(WIRE.date), company.timezone)
     const props = await dayView(company.id, company.timezone, providerId, date)
     if (!props) return c.notFound()
     return render(c, props)
@@ -139,7 +139,7 @@ export function scheduleRoutes({ db, notifier, auth }: Deps) {
     const provider = await providerRepo.findById(company.id, providerId)
     if (!provider) return c.notFound()
 
-    const date = readDate(c.req.query('date'), company.timezone)
+    const date = readDate(c.req.query(WIRE.date), company.timezone)
     const hours = await providerRepo.hoursFor(provider.id)
     const bands = workingIntervals(hours, date, company.timezone)
     if (bands.length === 0) return c.text('Não há expediente nesse dia.', 400)

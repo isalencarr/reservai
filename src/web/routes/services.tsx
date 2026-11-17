@@ -7,6 +7,7 @@ import { layoutProps, requireOwner, type StaffEnv, staffMiddleware } from '../st
 import { requireArea } from '../tenant.ts'
 import { Services, type ServicesProps } from '../views/services.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
+import { text, values, WIRE, type WireBody, YES } from '../wire.ts'
 
 const MIN_DURATION = 5
 const MAX_DURATION = 600
@@ -14,23 +15,20 @@ const MAX_DURATION = 600
 type ParsedForm = { input: ServiceInput; providerIds: string[] } | { error: string }
 
 /** Validação em um lugar só: as telas de criar e editar mandam o mesmo formulário. */
-function readForm(body: Record<string, unknown>): ParsedForm {
-  const name = typeof body.nome === 'string' ? body.nome.trim() : ''
+function readForm(body: WireBody): ParsedForm {
+  const name = text(body, WIRE.name)
   if (name === '') return { error: 'O serviço precisa de um nome.' }
 
-  const durationMinutes = Number(body.duracao)
+  const durationMinutes = Number(text(body, WIRE.duration))
   if (!Number.isInteger(durationMinutes)) return { error: 'Duração precisa ser um número.' }
   if (durationMinutes < MIN_DURATION || durationMinutes > MAX_DURATION) {
     return { error: `Duração precisa estar entre ${MIN_DURATION} e ${MAX_DURATION} minutos.` }
   }
 
-  const priceCents = parsePrice(typeof body.preco === 'string' ? body.preco : undefined)
+  const priceCents = parsePrice(text(body, WIRE.price))
   if (priceCents === undefined) return { error: 'Preço inválido. Use algo como 90,00.' }
 
-  const raw = body.prestador
-  const providerIds = (Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]).filter(
-    (id): id is string => typeof id === 'string',
-  )
+  const providerIds = values(body, WIRE.provider)
 
   return { input: { name, durationMinutes, priceCents }, providerIds }
 }
@@ -75,7 +73,7 @@ export function serviceRoutes({ db, auth }: Deps) {
 
   app.get('/', async (c) => {
     const company = c.get('company')
-    const editingId = c.req.query('editar')
+    const editingId = c.req.query(WIRE.editing)
     return render(c, await props(company.id, { editingId }))
   })
 
@@ -111,7 +109,8 @@ export function serviceRoutes({ db, auth }: Deps) {
   app.post('/:id/ativo', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
-    const updated = await serviceRepo.setActive(company.id, c.req.param('id'), body.ativo === 'sim')
+    const active = text(body, WIRE.active) === YES
+    const updated = await serviceRepo.setActive(company.id, c.req.param('id'), active)
     if (!updated) return c.notFound()
     return render(c, await props(company.id))
   })

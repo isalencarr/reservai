@@ -22,6 +22,7 @@ import { requireArea, type TenantEnv } from '../tenant.ts'
 import { Booking, type BookingProps, MyBookings, type MyBookingsProps } from '../views/booking.tsx'
 import { Layout } from '../views/layout.tsx'
 import { Unavailable } from '../views/unavailable.tsx'
+import { text, WIRE } from '../wire.ts'
 
 const DAYS_AHEAD = 14
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -116,18 +117,18 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
     if (!customer) return c.redirect('/entrar', 303)
 
     const services = await serviceRepo.listActive(company.id)
-    const service = services.find((s) => s.id === c.req.query('servico'))
+    const service = services.find((s) => s.id === c.req.query(WIRE.service))
     const providers = service ? await serviceRepo.providersFor(company.id, service.id) : []
-    const provider = providers.find((p) => p.id === c.req.query('prestador'))
+    const provider = providers.find((p) => p.id === c.req.query(WIRE.provider))
 
-    const rawDate = c.req.query('data')
+    const rawDate = c.req.query(WIRE.date)
     const date = rawDate && DATE_PATTERN.test(rawDate) ? rawDate : undefined
     const starts =
       service && provider && date
         ? await slotsFor(company.id, timeZone, provider.id, service.durationMinutes, date)
         : []
 
-    const rawHour = c.req.query('hora')
+    const rawHour = c.req.query(WIRE.time)
     const wanted = rawHour ? new Date(rawHour) : undefined
     const chosen =
       wanted && !Number.isNaN(wanted.getTime())
@@ -183,15 +184,9 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
     const body = await c.req.parseBody()
     const customerId = c.get('customerId')
 
-    const service = await serviceRepo.findById(
-      company.id,
-      typeof body.servico === 'string' ? body.servico : '',
-    )
-    const provider = await providerRepo.findById(
-      company.id,
-      typeof body.prestador === 'string' ? body.prestador : '',
-    )
-    const startsAt = new Date(typeof body.hora === 'string' ? body.hora : '')
+    const service = await serviceRepo.findById(company.id, text(body, WIRE.service))
+    const provider = await providerRepo.findById(company.id, text(body, WIRE.provider))
+    const startsAt = new Date(text(body, WIRE.time))
 
     if (!service?.active || !provider || Number.isNaN(startsAt.getTime())) {
       return meus(c, 'Esse horário não está mais disponível. Escolha outro.', 422)

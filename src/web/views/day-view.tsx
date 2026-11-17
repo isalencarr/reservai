@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { GridBand } from '../../domain/schedule.ts'
 import { addDays, formatLongDate, formatTime, type LocalDate } from '../../domain/time.ts'
 import type { DayEntry } from '../../repos/appointments.ts'
+import { WIRE } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type DayViewProps = {
@@ -39,7 +40,7 @@ const Busy: FC<RowProps & { entry: DayEntry; span: number }> = ({
             <button
               type="button"
               class="btn danger"
-              hx-delete={`/agenda/${providerId}/bloqueios/${entry.id}?date=${date}`}
+              hx-delete={`/agenda/${providerId}/bloqueios/${entry.id}?${WIRE.date}=${date}`}
             >
               <Icon name="lock_open" />
               Liberar
@@ -64,7 +65,7 @@ const Free: FC<RowProps & { start: Date; end: Date }> = ({
       <button
         type="button"
         class="btn ghost"
-        hx-post={`/agenda/${providerId}/bloqueios?date=${date}`}
+        hx-post={`/agenda/${providerId}/bloqueios?${WIRE.date}=${date}`}
         hx-vals={JSON.stringify({ startsAt: start.toISOString(), endsAt: end.toISOString() })}
       >
         <Icon name="block" />
@@ -78,7 +79,7 @@ const Free: FC<RowProps & { start: Date; end: Date }> = ({
  * um bloqueio está aqui dentro, então toda ação devolve esta mesma seção. */
 export const DayView: FC<DayViewProps> = ({ date, timeZone, bands, providerId, providerName }) => {
   const row: RowProps = { providerId, date, timeZone }
-  const link = (d: LocalDate) => `/agenda/${providerId}?date=${d}`
+  const link = (d: LocalDate) => `/agenda/${providerId}?${WIRE.date}=${d}`
 
   return (
     <section id="day" hx-target="#day" hx-swap="outerHTML">
@@ -111,7 +112,7 @@ export const DayView: FC<DayViewProps> = ({ date, timeZone, bands, providerId, p
         <button
           type="button"
           class="btn danger"
-          hx-post={`/agenda/${providerId}/folga?date=${date}`}
+          hx-post={`/agenda/${providerId}/folga?${WIRE.date}=${date}`}
           hx-confirm="Bloquear o dia inteiro e avisar quem já está marcado?"
         >
           <Icon name="event_busy" />

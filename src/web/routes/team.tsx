@@ -32,6 +32,7 @@ import { People, type PeopleProps } from '../views/people.tsx'
 import { StaffLayout } from '../views/staff-layout.tsx'
 import { StaffLogin, type StaffLoginProps, TeamPanel } from '../views/team.tsx'
 import { Workweek, type WorkweekProps } from '../views/workweek.tsx'
+import { rangeField, text, WIRE, type WireBody, YES } from '../wire.ts'
 
 function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/equipe'
@@ -57,7 +58,7 @@ export function teamRoutes({ db, auth }: Deps) {
       status as 200,
     )
 
-  app.get('/entrar', (c) => render(c, { next: safeNext(c.req.query('next')) }))
+  app.get('/entrar', (c) => render(c, { next: safeNext(c.req.query(WIRE.next)) }))
 
   /**
    * O link só é emitido para e-mail que já está na equipe ativa deste salão —
@@ -67,8 +68,8 @@ export function teamRoutes({ db, auth }: Deps) {
   app.post('/entrar', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
-    const next = safeNext(body.next)
-    const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
+    const next = safeNext(text(body, WIRE.next))
+    const email = normalizeEmail(text(body, WIRE.email))
     if (!email) return render(c, { next, error: 'E-mail inválido.' }, 422)
 
     const staff = await providerRepo.findByEmail(company.id, email)
@@ -133,22 +134,22 @@ export function teamRoutes({ db, auth }: Deps) {
   people.use('*', requireOwner())
   people.use('*', denyOnSupport())
 
-  function readPessoa(body: Record<string, unknown>): ProviderInput | { error: string } {
-    const name = typeof body.nome === 'string' ? body.nome.trim() : ''
+  function readPerson(body: WireBody): ProviderInput | { error: string } {
+    const name = text(body, WIRE.name)
     if (name.length < 2) return { error: 'Escreva o nome da pessoa.' }
 
-    const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
+    const email = normalizeEmail(text(body, WIRE.email))
     if (!email) return { error: 'E-mail inválido: é por ele que a pessoa entra.' }
 
-    const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
+    const phone = normalizePhone(text(body, WIRE.phone))
     if (!phone) return { error: 'Telefone inválido. Use DDD e número.' }
 
-    const slotMinutes = Number(body.slot)
+    const slotMinutes = Number(text(body, WIRE.slot))
     if (!Number.isInteger(slotMinutes) || slotMinutes < 5 || slotMinutes > 240) {
       return { error: 'O slot precisa estar entre 5 e 240 minutos.' }
     }
 
-    const minLeadMinutes = Number(body.antecedencia)
+    const minLeadMinutes = Number(text(body, WIRE.leadMinutes))
     if (!Number.isInteger(minLeadMinutes) || minLeadMinutes < 0 || minLeadMinutes > 1440) {
       return { error: 'A antecedência precisa estar entre 0 e 1440 minutos.' }
     }
@@ -157,7 +158,7 @@ export function teamRoutes({ db, auth }: Deps) {
       name,
       email,
       phone,
-      role: body.papel === 'owner' ? 'owner' : 'provider',
+      role: text(body, WIRE.role) === 'owner' ? 'owner' : 'provider',
       slotMinutes,
       minLeadMinutes,
     }
@@ -198,7 +199,7 @@ export function teamRoutes({ db, auth }: Deps) {
     })
   }
 
-  people.get('/', (c) => peopleView(c, { editingId: c.req.query('editar') }))
+  people.get('/', (c) => peopleView(c, { editingId: c.req.query(WIRE.editing) }))
 
   people.post('/:id/convite', async (c) => {
     const company = c.get('company')
@@ -214,7 +215,7 @@ export function teamRoutes({ db, auth }: Deps) {
 
   people.post('/', async (c) => {
     const company = c.get('company')
-    const parsed = readPessoa(await c.req.parseBody())
+    const parsed = readPerson(await c.req.parseBody())
     if ('error' in parsed) return peopleView(c, { error: parsed.error }, 422)
 
     if (await providerRepo.findByPhone(company.id, parsed.phone)) {
@@ -235,7 +236,7 @@ export function teamRoutes({ db, auth }: Deps) {
     const existing = await providerRepo.findById(company.id, id)
     if (!existing) return c.notFound()
 
-    const parsed = readPessoa(await c.req.parseBody())
+    const parsed = readPerson(await c.req.parseBody())
     if ('error' in parsed) return peopleView(c, { error: parsed.error, editingId: id }, 422)
 
     const mesmoTelefone = await providerRepo.findByPhone(company.id, parsed.phone)
@@ -266,7 +267,7 @@ export function teamRoutes({ db, auth }: Deps) {
     const company = c.get('company')
     const id = c.req.param('id') ?? ''
     const body = await c.req.parseBody()
-    const active = body.ativo === 'sim'
+    const active = text(body, WIRE.active) === YES
 
     if (id === c.get('staff').id) {
       return peopleView(
@@ -362,12 +363,12 @@ export function teamRoutes({ db, auth }: Deps) {
 
   /** Duas faixas por dia no formulário: a lacuna entre elas é o almoço. Campo
    * vazio apaga a faixa, e dia sem faixa é folga. */
-  function readWeek(body: Record<string, unknown>): WorkRange[] | { error: string } {
+  function readWeek(body: WireBody): WorkRange[] | { error: string } {
     const ranges: WorkRange[] = []
     for (const weekday of WEEKDAY_NAMES.keys()) {
-      for (const band of [1, 2]) {
-        const start = parseMinute(body[`d${weekday}i${band}`])
-        const end = parseMinute(body[`d${weekday}f${band}`])
+      for (const band of [1, 2] as const) {
+        const start = parseMinute(text(body, rangeField(weekday, band, 'start')))
+        const end = parseMinute(text(body, rangeField(weekday, band, 'end')))
         if (start === undefined && end === undefined) continue
         if (start === undefined || end === undefined) {
           return { error: `Em ${WEEKDAY_NAMES[weekday]}, a faixa precisa de início e fim.` }
@@ -380,7 +381,7 @@ export function teamRoutes({ db, auth }: Deps) {
     return error ? { error: error } : ranges
   }
 
-  workweek.get('/', (c) => workweekView(c, { providerId: c.req.query('pessoa') }))
+  workweek.get('/', (c) => workweekView(c, { providerId: c.req.query(WIRE.person) }))
 
   workweek.post('/:id', async (c) => {
     const id = c.req.param('id') ?? ''
@@ -422,11 +423,12 @@ export function teamRoutes({ db, auth }: Deps) {
     const body = await c.req.parseBody()
 
     // Só cor da lista e só tom conhecido: a paleta é gerada, não digitada.
-    const cor = typeof body.cor === 'string' ? paletteOf(body.cor)?.seed : undefined
-    const tom = isThemeMode(body.tom) ? body.tom : undefined
-    if (!cor && !tom) return c.text('Escolha uma cor ou um tom.', 422)
+    const seed = paletteOf(text(body, WIRE.color))?.seed
+    const typed = text(body, WIRE.mode)
+    const mode = isThemeMode(typed) ? typed : undefined
+    if (!seed && !mode) return c.text('Escolha uma cor ou um tom.', 422)
 
-    await companyRepo.updateTheme(company.id, cor ?? company.themeSeed, tom ?? company.themeMode)
+    await companyRepo.updateTheme(company.id, seed ?? company.themeSeed, mode ?? company.themeMode)
     return c.redirect('/equipe/aparencia', 303)
   })
 

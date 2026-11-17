@@ -16,6 +16,7 @@ import { createPlatformAdminRepo } from '../../repos/platform-admins.ts'
 import { createSubscriptionRepo } from '../../repos/subscriptions.ts'
 import { createSupportSessionRepo } from '../../repos/support-sessions.ts'
 import type { Deps } from '../deps.ts'
+import { STATUS, text, WIRE, type WireBody } from '../wire.ts'
 import { type PlatformEnv, platformAdminMiddleware } from './admin.ts'
 import { Companies, type CompaniesProps } from './views/companies.tsx'
 import { BackofficeLayout } from './views/layout.tsx'
@@ -25,24 +26,22 @@ function safeNext(raw: unknown): string {
   return typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
 }
 
-const text = (value: unknown): string => (typeof value === 'string' ? value : '')
-
 /** Identidade do salão: os mesmos campos no formulário de criar e no de editar. */
-function readIdentity(body: Record<string, unknown>): CompanyIdentity {
+function readIdentity(body: WireBody): CompanyIdentity {
   return {
-    name: text(body.nome),
-    host: text(body.host),
-    slug: text(body.slug),
-    timezone: text(body.fuso),
+    name: text(body, WIRE.name),
+    host: text(body, WIRE.host),
+    slug: text(body, WIRE.slug),
+    timezone: text(body, WIRE.timezone),
   }
 }
 
-function readNewCompany(body: Record<string, unknown>): NewCompany {
+function readNewCompany(body: WireBody): NewCompany {
   return {
     ...readIdentity(body),
-    ownerName: text(body.dono),
-    email: text(body.email),
-    phone: text(body.telefone),
+    ownerName: text(body, WIRE.ownerName),
+    email: text(body, WIRE.email),
+    phone: text(body, WIRE.phone),
   }
 }
 
@@ -87,14 +86,14 @@ export function backofficeApp({ db, auth }: Deps) {
       status as 200,
     )
 
-  app.get('/entrar', (c) => renderLogin(c, { next: safeNext(c.req.query('next')) }))
+  app.get('/entrar', (c) => renderLogin(c, { next: safeNext(c.req.query(WIRE.next)) }))
 
   /** O link só sai para e-mail que já está em `platform_admins`: a lista é
    * criada na migração, então não existe cadastro aberto nesta porta. */
   app.post('/entrar', async (c) => {
     const body = await c.req.parseBody()
-    const next = safeNext(body.next)
-    const email = normalizeEmail(typeof body.email === 'string' ? body.email : undefined)
+    const next = safeNext(text(body, WIRE.next))
+    const email = normalizeEmail(text(body, WIRE.email))
     if (!email) return renderLogin(c, { next, error: 'E-mail inválido.' }, 422)
 
     const admin = await adminRepo.findByEmail(email)
@@ -149,7 +148,7 @@ export function backofficeApp({ db, auth }: Deps) {
     return c.html(html, status as 200)
   }
 
-  panel.get('/', async (c) => renderPanel(c, await props({ editingId: c.req.query('editar') })))
+  panel.get('/', async (c) => renderPanel(c, await props({ editingId: c.req.query(WIRE.editing) })))
 
   panel.post('/saloes', async (c) => {
     const result = await createCompany(db, readNewCompany(await c.req.parseBody()))
@@ -165,8 +164,8 @@ export function backofficeApp({ db, auth }: Deps) {
     if (!company) return c.notFound()
 
     const body = await c.req.parseBody()
-    const plano = body.plano === 'anual' ? 'anual' : 'mensal'
-    const priceCents = parsePrice(typeof body.valor === 'string' ? body.valor : undefined)
+    const plan = text(body, WIRE.plan) === 'anual' ? 'anual' : 'mensal'
+    const priceCents = parsePrice(text(body, WIRE.amount))
     if (priceCents === undefined) {
       return renderPanel(
         c,
@@ -175,7 +174,7 @@ export function backofficeApp({ db, auth }: Deps) {
       )
     }
 
-    const day = typeof body.pago_ate === 'string' ? body.pago_ate.trim() : ''
+    const day = text(body, WIRE.paidUntil)
     if (day !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(day)) {
       return renderPanel(
         c,
@@ -185,7 +184,7 @@ export function backofficeApp({ db, auth }: Deps) {
     }
 
     await subscriptionRepo.save(id, {
-      plan: plano,
+      plan,
       priceCents,
       paidUntil: day === '' ? null : paidUntilInstant(day, company.timezone),
     })
@@ -197,7 +196,8 @@ export function backofficeApp({ db, auth }: Deps) {
     if (!(await companyRepo.findById(id))) return c.notFound()
 
     const body = await c.req.parseBody()
-    await companyRepo.setStatus(id, body.situacao === 'suspenso' ? 'suspended' : 'active')
+    const status = text(body, WIRE.status)
+    await companyRepo.setStatus(id, status === STATUS.suspended ? 'suspended' : 'active')
     return renderPanel(c, await props({ editingId: id }))
   })
 

@@ -8,6 +8,15 @@ import { createSeededDb, staffLogin, upcomingWeekday } from './helpers.ts'
 const HOST = 'equipe.beleza-pura.localhost'
 const MONDAY = upcomingWeekday(1, 'America/Sao_Paulo')
 
+/** O botão manda os campos por hx-vals. Se a tela e a rota discordarem do nome,
+ * nada falha em voz alta: a pessoa só não volta para a equipe. */
+function hxVals(html: string, label: string): Record<string, string> {
+  const upToLabel = html.slice(0, html.indexOf(label))
+  const found = upToLabel.match(/hx-vals="([^"]*)"(?![\s\S]*hx-vals=)/)
+  if (!found?.[1]) throw new Error(`sem hx-vals no botão ${label}`)
+  return JSON.parse(found[1].replaceAll('&quot;', '"'))
+}
+
 async function setup() {
   const seeded = await createSeededDb()
   const notifier = createLogNotifier(false)
@@ -75,7 +84,7 @@ describe('cadastro da equipe', () => {
 
     const headers = await s.asStaff('bia@salao.com.br')
     const [bia] = await s.db.select().from(providers).where(eq(providers.name, 'Bia Souza'))
-    const res = await s.app.request(`/agenda/${bia?.id}?date=${MONDAY}`, { headers })
+    const res = await s.app.request(`/agenda/${bia?.id}?data=${MONDAY}`, { headers })
     expect(res.status).toBe(200)
     expect(await res.text()).toContain('Bloquear 09:00')
   })
@@ -165,5 +174,26 @@ describe('cadastro da equipe', () => {
     )
     expect(demote.status).toBe(422)
     expect(await demote.text()).toContain('pelo menos um dono')
+  })
+})
+
+describe('o que a tela manda e a rota lê', () => {
+  it('trazer de volta funciona com o payload que a própria tela monta', async () => {
+    const s = await setup()
+    const { cookie } = await s.asStaff(s.carla.email ?? '')
+    await s.app.request(`/equipe/pessoas/${s.rafa.id}/ativo`, s.form({ ativo: 'nao' }, cookie))
+
+    // É a volta que separa: campo com nome errado chega vazio, e vazio tira da
+    // equipe, então tirar passaria mesmo quebrado.
+    const screen = await (
+      await s.app.request(`/equipe/pessoas?editar=${s.rafa.id}`, {
+        headers: { host: HOST, cookie },
+      })
+    ).text()
+    const payload = hxVals(screen, 'Trazer de volta')
+    await s.app.request(`/equipe/pessoas/${s.rafa.id}/ativo`, s.form(payload, cookie))
+
+    const [row] = await s.db.select().from(providers).where(eq(providers.id, s.rafa.id))
+    expect(row?.active).toBe(true)
   })
 })

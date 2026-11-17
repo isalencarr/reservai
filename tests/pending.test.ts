@@ -137,7 +137,7 @@ describe('folga do dia', () => {
   it('cancela o que estava marcado, avisa para remarcar e fecha o dia', async () => {
     const s = await setup()
     await request(s)
-    const res = await s.app.request(`/agenda/${s.carla.id}/folga?date=${MONDAY}`, {
+    const res = await s.app.request(`/agenda/${s.carla.id}/folga?data=${MONDAY}`, {
       method: 'POST',
       headers: s.hx,
     })
@@ -157,7 +157,7 @@ describe('folga do dia', () => {
   it('recusa folga em dia sem expediente', async () => {
     const s = await setup()
     const sunday = upcomingWeekday(0, SP)
-    const res = await s.app.request(`/agenda/${s.carla.id}/folga?date=${sunday}`, {
+    const res = await s.app.request(`/agenda/${s.carla.id}/folga?data=${sunday}`, {
       method: 'POST',
       headers: s.hx,
     })

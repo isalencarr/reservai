@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
+import { WIRE } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type StaffLoginProps = {
@@ -29,10 +30,10 @@ export const StaffLogin: FC<StaffLoginProps> = ({ next, error, sentTo }) => (
     ) : (
       <form class="card service-form" hx-post="/equipe/entrar">
         <p class="muted">Entre com o e-mail cadastrado no salão. Enviamos um link de acesso.</p>
-        <input type="hidden" name="next" value={next} />
+        <input type="hidden" name={WIRE.next} value={next} />
         <label>
           E-mail
-          <input type="email" name="email" required autocomplete="email" />
+          <input type="email" name={WIRE.email} required autocomplete="email" />
         </label>
         <button type="submit" class="btn filled">
           <Icon name="mail" />

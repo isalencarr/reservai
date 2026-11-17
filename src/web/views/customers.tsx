@@ -3,6 +3,7 @@ import { formatPhone } from '../../domain/phone.ts'
 import { formatWhen } from '../../domain/time.ts'
 import type { CustomerEntry } from '../../repos/appointments.ts'
 import type { CustomerRow } from '../../repos/customers.ts'
+import { WIRE } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type CustomersProps = {
@@ -71,7 +72,7 @@ export const Customers: FC<CustomersProps> = ({ items, query, timeZone, viewing 
         <span class="search-label">
           <Icon name="search" /> Buscar por nome ou telefone
         </span>
-        <input type="search" name="q" value={query} placeholder="Maria ou 11988880001" />
+        <input type="search" name={WIRE.query} value={query} placeholder="Maria ou 11988880001" />
       </label>
     </form>
 

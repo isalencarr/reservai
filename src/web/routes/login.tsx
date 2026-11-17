@@ -9,6 +9,7 @@ import { setCustomerSession } from '../customer-session.ts'
 import { requireArea, type TenantEnv } from '../tenant.ts'
 import { Entrar, type EntrarProps } from '../views/customer-login.tsx'
 import { Layout } from '../views/layout.tsx'
+import { text, WIRE } from '../wire.ts'
 
 /** Só caminhos internos: `next` vem do formulário e não pode virar redirecionamento
  * para fora do salão. */
@@ -34,14 +35,14 @@ export function loginRoutes(db: Db, notifier: Notifier) {
       status as 200,
     )
 
-  app.get('/', (c) => render(c, { next: safeNext(c.req.query('next')) }))
+  app.get('/', (c) => render(c, { next: safeNext(c.req.query(WIRE.next)) }))
 
   app.post('/', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
-    const next = safeNext(body.next)
-    const name = typeof body.nome === 'string' ? body.nome.trim() : ''
-    const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
+    const next = safeNext(text(body, WIRE.next))
+    const name = text(body, WIRE.name)
+    const phone = normalizePhone(text(body, WIRE.phone))
 
     if (name.length < 2) return render(c, { next, error: 'Escreva seu nome.' }, 422)
     if (!phone) {
@@ -65,9 +66,9 @@ export function loginRoutes(db: Db, notifier: Notifier) {
   app.post('/codigo', async (c) => {
     const company = c.get('company')
     const body = await c.req.parseBody()
-    const next = safeNext(body.next)
-    const phone = normalizePhone(typeof body.telefone === 'string' ? body.telefone : undefined)
-    const typed = typeof body.codigo === 'string' ? body.codigo.replace(/\D/g, '') : ''
+    const next = safeNext(text(body, WIRE.next))
+    const phone = normalizePhone(text(body, WIRE.phone))
+    const typed = text(body, WIRE.code).replace(/\D/g, '')
 
     if (!phone) return render(c, { next, error: 'Comece de novo, por favor.' }, 422)
 

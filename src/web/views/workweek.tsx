@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { Provider } from '../../db/schema.ts'
 import { formatMinute } from '../../domain/time.ts'
 import { dayRanges, WEEKDAY_NAMES, type WorkRange } from '../../domain/workday.ts'
+import { rangeField } from '../wire.ts'
 import { Icon } from './icon.tsx'
 
 export type WorkweekItem = { provider: Provider; days: number }
@@ -46,14 +47,18 @@ const DayRow: FC<{ weekday: number; name: string; ranges: WorkRange[] }> = ({
         {rangesOfDay.length === 0 ? <small class="tag"> folga</small> : null}
       </strong>
       <div class="ranges">
-        <RangeField field={`d${weekday}i1`} label="de" minute={first?.startMinute} />
-        <RangeField field={`d${weekday}f1`} label="até" minute={first?.endMinute} />
         <RangeField
-          field={`d${weekday}i2`}
+          field={rangeField(weekday, 1, 'start')}
+          label="de"
+          minute={first?.startMinute}
+        />
+        <RangeField field={rangeField(weekday, 1, 'end')} label="até" minute={first?.endMinute} />
+        <RangeField
+          field={rangeField(weekday, 2, 'start')}
           label="depois do almoço, de"
           minute={second?.startMinute}
         />
-        <RangeField field={`d${weekday}f2`} label="até" minute={second?.endMinute} />
+        <RangeField field={rangeField(weekday, 2, 'end')} label="até" minute={second?.endMinute} />
       </div>
     </div>
   )

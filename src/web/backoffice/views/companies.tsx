@@ -6,6 +6,7 @@ import { formatDayMonth, formatWhen } from '../../../domain/time.ts'
 import { DEFAULT_TIMEZONE } from '../../../platform/companies.ts'
 import { STAFF_PREFIX } from '../../tenant.ts'
 import { Icon } from '../../views/icon.tsx'
+import { STATUS, WIRE } from '../../wire.ts'
 
 export type CompanyRow = {
   company: Company
@@ -100,7 +101,7 @@ const Fields: FC<{ company?: Company }> = ({ company }) => (
       Nome
       <input
         type="text"
-        name="nome"
+        name={WIRE.name}
         required
         placeholder="Beleza Pura"
         value={company?.name ?? ''}
@@ -110,7 +111,7 @@ const Fields: FC<{ company?: Company }> = ({ company }) => (
       Endereço do cliente
       <input
         type="text"
-        name="host"
+        name={WIRE.host}
         required
         placeholder="beleza-pura.com.br"
         value={company?.host ?? ''}
@@ -120,14 +121,14 @@ const Fields: FC<{ company?: Company }> = ({ company }) => (
       Apelido
       <input
         type="text"
-        name="slug"
+        name={WIRE.slug}
         placeholder="sai do nome, se vazio"
         value={company?.slug ?? ''}
       />
     </label>
     <label>
       Fuso
-      <select name="fuso">
+      <select name={WIRE.timezone}>
         {TIMEZONES.map((timezone) => (
           <option
             key={timezone}
@@ -156,7 +157,7 @@ const SubscriptionBlock: FC<{ row: CompanyRow }> = ({ row }) => {
         <legend>Assinatura</legend>
         <label>
           Plano
-          <select name="plano">
+          <select name={WIRE.plan}>
             {PLANS.map((plano) => (
               <option
                 key={plano}
@@ -172,7 +173,7 @@ const SubscriptionBlock: FC<{ row: CompanyRow }> = ({ row }) => {
           Valor
           <input
             type="text"
-            name="valor"
+            name={WIRE.amount}
             placeholder="149,00"
             inputmode="decimal"
             value={formatPrice(subscription?.priceCents ?? null)}
@@ -180,7 +181,7 @@ const SubscriptionBlock: FC<{ row: CompanyRow }> = ({ row }) => {
         </label>
         <label>
           Pago até
-          <input type="date" name="pago_ate" value={prazo ?? ''} />
+          <input type="date" name={WIRE.paidUntil} value={prazo ?? ''} />
         </label>
       </fieldset>
       <div class="actions">
@@ -196,7 +197,11 @@ const StatusBlock: FC<{ row: CompanyRow }> = ({ row: { company } }) => {
   const isSuspended = company.status === 'suspended'
   return (
     <form class="service-form" hx-post={`/saloes/${company.id}/situacao`}>
-      <input type="hidden" name="situacao" value={isSuspended ? 'ativo' : 'suspenso'} />
+      <input
+        type="hidden"
+        name={WIRE.status}
+        value={isSuspended ? STATUS.active : STATUS.suspended}
+      />
       <p class="muted">
         {isSuspended
           ? 'Suspenso: o cliente não marca horário novo, o que já está confirmado segue valendo e a equipe continua entrando.'
@@ -256,15 +261,15 @@ export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) =>
           <legend>Primeiro dono</legend>
           <label>
             Nome
-            <input type="text" name="dono" required placeholder="Carla Mendes" />
+            <input type="text" name={WIRE.ownerName} required placeholder="Carla Mendes" />
           </label>
           <label>
             E-mail
-            <input type="email" name="email" required placeholder="carla@salao.com.br" />
+            <input type="email" name={WIRE.email} required placeholder="carla@salao.com.br" />
           </label>
           <label>
             Telefone
-            <input type="tel" name="telefone" required placeholder="11988880001" />
+            <input type="tel" name={WIRE.phone} required placeholder="11988880001" />
           </label>
         </fieldset>
         <button type="submit" class="btn filled">

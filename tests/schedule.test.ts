@@ -28,7 +28,7 @@ async function setup() {
 describe('agenda do prestador', () => {
   it('mostra o dia dividido em slots, com o almoço separando as faixas', async () => {
     const { app, carla, plain } = await setup()
-    const res = await app.request(`/agenda/${carla.id}?date=${MONDAY}`, { headers: plain })
+    const res = await app.request(`/agenda/${carla.id}?data=${MONDAY}`, { headers: plain })
     const html = await res.text()
 
     expect(res.status).toBe(200)
@@ -40,14 +40,14 @@ describe('agenda do prestador', () => {
 
   it('não mostra expediente em dia de folga', async () => {
     const { app, carla, headers } = await setup()
-    const res = await app.request(`/agenda/${carla.id}?date=2026-11-15`, { headers })
+    const res = await app.request(`/agenda/${carla.id}?data=2026-11-15`, { headers })
     expect(await res.text()).toContain('Sem expediente')
   })
 
   it('bloqueia um horário e devolve a agenda já com o bloqueio', async () => {
     const { app, carla, form } = await setup()
     const res = await app.request(
-      `/agenda/${carla.id}/bloqueios?date=${MONDAY}`,
+      `/agenda/${carla.id}/bloqueios?data=${MONDAY}`,
       form({ startsAt: at(600).toISOString(), endsAt: at(660).toISOString(), note: 'Dentista' }),
     )
     const html = await res.text()
@@ -69,13 +69,13 @@ describe('agenda do prestador', () => {
   it('libera um bloqueio criado antes', async () => {
     const { app, db, carla, headers, form } = await setup()
     await app.request(
-      `/agenda/${carla.id}/bloqueios?date=${MONDAY}`,
+      `/agenda/${carla.id}/bloqueios?data=${MONDAY}`,
       form({ startsAt: at(600).toISOString(), endsAt: at(660).toISOString() }),
     )
     const [created] = await db.select().from(appointments)
     if (!created) throw new Error('bloqueio não foi criado')
 
-    const res = await app.request(`/agenda/${carla.id}/bloqueios/${created.id}?date=${MONDAY}`, {
+    const res = await app.request(`/agenda/${carla.id}/bloqueios/${created.id}?data=${MONDAY}`, {
       method: 'DELETE',
       headers,
     })
@@ -124,7 +124,7 @@ describe('agenda do prestador', () => {
       status: 'confirmed',
     })
 
-    const html = await (await app.request(`/agenda/${carla.id}?date=${MONDAY}`, { headers })).text()
+    const html = await (await app.request(`/agenda/${carla.id}?data=${MONDAY}`, { headers })).text()
     expect(html).toContain(maria.name)
     expect(html).toContain('Progressiva')
     expect(html).not.toContain(maria.phone)
