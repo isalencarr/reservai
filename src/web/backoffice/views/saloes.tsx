@@ -3,7 +3,7 @@ import type { Company, Subscription, SupportSession } from '../../../db/schema.t
 import { formatPrice } from '../../../domain/money.ts'
 import { paidUntilDate, paymentState } from '../../../domain/subscription.ts'
 import { formatDayMonth, formatWhen } from '../../../domain/time.ts'
-import { FUSO_PADRAO } from '../../../platform/saloes.ts'
+import { DEFAULT_TIMEZONE } from '../../../platform/companies.ts'
 import { STAFF_PREFIX } from '../../tenant.ts'
 import { Icon } from '../../views/icon.tsx'
 
@@ -129,7 +129,11 @@ const Campos: FC<{ company?: Company }> = ({ company }) => (
       Fuso
       <select name="fuso">
         {FUSOS.map((fuso) => (
-          <option key={fuso} value={fuso} selected={(company?.timezone ?? FUSO_PADRAO) === fuso}>
+          <option
+            key={fuso}
+            value={fuso}
+            selected={(company?.timezone ?? DEFAULT_TIMEZONE) === fuso}
+          >
             {fuso.replace('America/', '')}
           </option>
         ))}

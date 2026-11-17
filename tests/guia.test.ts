@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { providerHours, services } from '../src/db/schema.ts'
 import { createLogNotifier } from '../src/notify/log-notifier.ts'
-import { criarSalao } from '../src/platform/saloes.ts'
+import { createCompany } from '../src/platform/companies.ts'
 import { createApp } from '../src/web/app.tsx'
 import { createSeededDb, createTestDb, staffLogin } from './helpers.ts'
 
@@ -25,18 +25,18 @@ async function salaoNovo() {
   const db = createTestDb()
   const notifier = createLogNotifier(false)
   const app = createApp(db, notifier)
-  const feito = await criarSalao(db, {
-    nome: 'Salão da Inês',
+  const created = await createCompany(db, {
+    name: 'Salão da Inês',
     host: 'ines.localhost',
-    dono: 'Inês Prado',
+    ownerName: 'Inês Prado',
     email: 'ines@ines.com.br',
-    telefone: '11955552222',
+    phone: '11955552222',
   })
-  if ('erro' in feito) throw new Error(feito.erro)
+  if ('error' in created) throw new Error(created.error)
 
   const host = 'equipe.ines.localhost'
-  const cookie = await staffLogin(app, notifier, host, feito.owner.email ?? '')
-  return { db, app, headers: { host, cookie }, ...feito }
+  const cookie = await staffLogin(app, notifier, host, created.owner.email ?? '')
+  return { db, app, headers: { host, cookie }, ...created }
 }
 
 describe('aviso de pendência', () => {

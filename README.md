@@ -55,7 +55,7 @@ bun run salao:novo --nome "Barbearia do Zé" --host zebarber.com.br \
 ```
 
 O comando cria o salão e o primeiro dono, que entra por `equipe.<host>`. O
-backoffice faz o mesmo pela web, com a mesma regra (`src/platform/saloes.ts`).
+backoffice faz o mesmo pela web, com a mesma regra (`src/platform/companies.ts`).
 Não há tela pública de criação de salão: isso é operação de quem administra a
 plataforma.
 
