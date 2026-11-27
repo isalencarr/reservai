@@ -78,7 +78,7 @@ describe('aviso de pendência', () => {
 
     const html = await res.text()
     expect(html).not.toContain('Falta configurar')
-    expect(html).toContain('Montar o salão')
+    expect(html).toContain('Montar o negócio')
   })
 
   it('quem atende não vê o aviso: não é ele que resolve', async () => {
@@ -132,7 +132,7 @@ describe('página do guia', () => {
 
     const res = await s.app.request('/equipe/guia', { headers })
     const html = await res.text()
-    expect(html).not.toContain('Montar o salão')
+    expect(html).not.toContain('Montar o negócio')
     expect(html).not.toContain('Cadastre os serviços')
   })
 
@@ -145,7 +145,7 @@ describe('página do guia', () => {
     expect(res.status).toBe(200)
     expect(html).toContain('Como o cliente marca')
     expect(html).toContain('Minha agenda')
-    expect(html).not.toContain('Carteira é do salão')
+    expect(html).not.toContain('Carteira é do negócio')
   })
 
   it('o guia exige sessão', async () => {

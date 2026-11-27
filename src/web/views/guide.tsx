@@ -28,7 +28,7 @@ const sectionsFor = (staff: Provider): Section[] => [
       'O cliente entra com nome e telefone e confirma um código de 6 dígitos. Não existe senha.',
       'Ele escolhe o serviço, depois o profissional, o dia e a hora. Só aparecem horários em que o serviço inteiro cabe na jornada e nada está ocupado.',
       'O pedido fica esperando resposta e já segura o horário. O prazo para responder é o menor entre 24 horas e uma hora antes do atendimento; passado o prazo, o pedido expira e o horário volta a ser oferecido.',
-      'O cliente cancela sozinho até 2 horas antes. Depois disso, só pelo salão.',
+      'O cliente cancela sozinho até 2 horas antes. Depois disso, só pelo negócio.',
     ],
   },
   {
@@ -84,7 +84,7 @@ const sectionsFor = (staff: Provider): Section[] => [
     href: '/clientes',
     ownerOnly: true,
     lines: [
-      'A carteira é do salão, não de quem atende: quem atende vê o nome e o horário, nunca o contato.',
+      'A carteira é do negócio, não de quem atende: quem atende vê o nome e o horário, nunca o contato.',
       'O cadastro nasce sozinho quando o cliente se identifica pela primeira vez.',
     ],
   },
@@ -173,7 +173,7 @@ export const Guide: FC<GuideProps> = ({ company, staff, steps }) => {
 
       {isOwner ? (
         <>
-          <h3>Montar o salão</h3>
+          <h3>Montar o negócio</h3>
           <p class="muted intro">
             Nesta ordem: cada passo depende do de cima. Enquanto faltar um deles, o cliente que
             abrir {company.host} não vai achar horário para marcar.
