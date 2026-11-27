@@ -25,7 +25,7 @@ const Fields: FC<{ person?: Provider }> = ({ person }) => (
           name={WIRE.email}
           required
           autocomplete="email"
-          placeholder="nome@salao.com.br"
+          placeholder="nome@negocio.com.br"
           value={person?.email ?? ''}
         />
       </label>

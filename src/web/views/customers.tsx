@@ -63,9 +63,11 @@ export const Customers: FC<CustomersProps> = ({ items, query, timeZone, viewing 
       <strong>
         {items.length} {items.length === 1 ? 'cliente' : 'clientes'}
       </strong>
-      <span class="hero-sub">{query ? `encontrados para "${query}"` : 'na carteira do salão'}</span>
+      <span class="hero-sub">
+        {query ? `encontrados para "${query}"` : 'na carteira do negócio'}
+      </span>
     </div>
-    <p class="muted">Os clientes são do salão. O profissional vê apenas nome e horário.</p>
+    <p class="muted">Os clientes são do negócio. O profissional vê apenas nome e horário.</p>
 
     <form class="card" hx-get="/clientes" hx-trigger="submit, input from:find input delay:400ms">
       <label class="search">

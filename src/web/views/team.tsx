@@ -20,7 +20,7 @@ export const StaffLogin: FC<StaffLoginProps> = ({ next, error, sentTo }) => (
     {sentTo ? (
       <div class="card service-form">
         <p>
-          Se <strong>{sentTo}</strong> estiver na equipe deste salão, o link de acesso já foi
+          Se <strong>{sentTo}</strong> estiver na equipe deste negócio, o link de acesso já foi
           enviado. Ele vale por 15 minutos.
         </p>
         <button type="button" class="btn ghost" hx-get={`/equipe/entrar?next=${next}`}>
@@ -29,7 +29,7 @@ export const StaffLogin: FC<StaffLoginProps> = ({ next, error, sentTo }) => (
       </div>
     ) : (
       <form class="card service-form" hx-post="/equipe/entrar">
-        <p class="muted">Entre com o e-mail cadastrado no salão. Enviamos um link de acesso.</p>
+        <p class="muted">Entre com o e-mail cadastrado no negócio. Enviamos um link de acesso.</p>
         <input type="hidden" name={WIRE.next} value={next} />
         <label>
           E-mail
