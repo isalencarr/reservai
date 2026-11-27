@@ -98,7 +98,7 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
       ),
     )
 
-  /** Salão suspenso não recebe pedido novo. A tela de "meus horários" e o
+  /** Negócio suspenso não recebe pedido novo. A tela de "meus horários" e o
    * cancelamento continuam: quem já marcou não perde o que combinou. */
   const isSuspended = (c: Context<CustomerEnv>) => c.get('company').status === 'suspended'
 
@@ -178,7 +178,7 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
   app.post('/', async (c) => {
     const company = c.get('company')
     if (isSuspended(c)) {
-      return meus(c, 'O salão não está recebendo novos agendamentos.', 403)
+      return meus(c, 'O negócio não está recebendo novos agendamentos.', 403)
     }
 
     const body = await c.req.parseBody()
@@ -255,7 +255,7 @@ export function bookingRoutes(db: Db, notifier: Notifier) {
       return meus(c, 'Esse horário já não está mais ativo.', 409)
     }
     if (!canCustomerCancel(existing.startsAt, new Date())) {
-      return meus(c, 'Faltam menos de 2 horas: fale com o salão para cancelar.', 409)
+      return meus(c, 'Faltam menos de 2 horas: fale com o negócio para cancelar.', 409)
     }
 
     const target = await appointmentRepo.setStatus(company.id, existing.id, 'cancelled')

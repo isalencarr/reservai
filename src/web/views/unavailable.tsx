@@ -1,19 +1,19 @@
 import type { FC } from 'hono/jsx'
 import { Icon } from './icon.tsx'
 
-/** Salão suspenso para o cliente: não dá para pedir horário novo, mas o que já
+/** Negócio suspenso para o cliente: não dá para pedir horário novo, mas o que já
  * estava confirmado continua valendo e visível. */
 export const Unavailable: FC = () => (
   <section id="unavailable">
     <div class="hero">
       <Icon name="event_busy" class="hero-icon" />
       <strong>Agenda fechada</strong>
-      <span class="hero-sub">o salão não está recebendo novos agendamentos</span>
+      <span class="hero-sub">o negócio não está recebendo novos agendamentos</span>
     </div>
 
     <p class="muted">
       Se você já tem um horário marcado, ele continua valendo. Para marcar um novo, fale direto com
-      o salão.
+      o negócio.
     </p>
 
     <ul class="people">
