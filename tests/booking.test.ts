@@ -262,7 +262,7 @@ describe('meus horários', () => {
 
     const res = await s.app.request(`/reserva/${row?.id}/cancelar`, form({}, cookie))
     expect(res.status).toBe(409)
-    expect(await res.text()).toContain('fale com o salão')
+    expect(await res.text()).toContain('fale com o negócio')
   })
 
   it('não deixa cancelar agendamento de outra pessoa', async () => {
