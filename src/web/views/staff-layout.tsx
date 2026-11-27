@@ -26,7 +26,7 @@ type Item = {
 }
 
 /** No suporte o menu encurta: carteira, equipe, acessos e aparência ficam
- * fora, porque são dados pessoais do salão ou escrita que seria recusada. */
+ * fora, porque são dados pessoais do negócio ou escrita que seria recusada. */
 function items(staff: Provider, support: boolean): Item[] {
   return allItems(staff).filter(
     (item) =>
@@ -160,7 +160,7 @@ export const StaffLayout: FC<Props> = ({
             </div>
           </nav>
           <main>
-            {/* O aviso sai do próprio salão, então toda tela interna o mostra sem
+            {/* O aviso sai do próprio negócio, então toda tela interna o mostra sem
             cada rota precisar lembrar de passar. */}
             {/* O aviso é do dono, que é quem resolve, e conta só o que impede o
             cliente de marcar: convite não aceito não vira tarja permanente. */}
@@ -176,15 +176,15 @@ export const StaffLayout: FC<Props> = ({
             ) : null}
             {support ? (
               <p class="notice">
-                Acesso de suporte a {company.name}: você vê o salão como o dono vê, sem a carteira
+                Acesso de suporte a {company.name}: você vê o negócio como o dono vê, sem a carteira
                 de clientes nem os dados da equipe, e sem poder alterar nada. Vence às{' '}
                 {formatTime(support.expiresAt, company.timezone)}.
               </p>
             ) : null}
             {company.status === 'suspended' ? (
               <p class="error">
-                Salão suspenso: o cliente não consegue marcar horário novo. O que já está confirmado
-                segue na agenda.
+                Negócio suspenso: o cliente não consegue marcar horário novo. O que já está
+                confirmado segue na agenda.
               </p>
             ) : null}
             {children}

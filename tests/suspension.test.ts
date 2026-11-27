@@ -132,7 +132,7 @@ describe('salão suspenso, lado da equipe', () => {
     for (const path of ['/equipe', '/servicos', '/horarios']) {
       const res = await s.app.request(path, { headers: { host: STAFF_HOST, cookie } })
       expect(res.status).toBe(200)
-      expect(await res.text()).toContain('Salão suspenso')
+      expect(await res.text()).toContain('Negócio suspenso')
     }
   })
 
@@ -141,7 +141,7 @@ describe('salão suspenso, lado da equipe', () => {
     const cookie = await staffLogin(s.app, s.notifier, STAFF_HOST, s.carla.email ?? '')
 
     const res = await s.app.request('/equipe', { headers: { host: STAFF_HOST, cookie } })
-    expect(await res.text()).not.toContain('Salão suspenso')
+    expect(await res.text()).not.toContain('Negócio suspenso')
   })
 })
 

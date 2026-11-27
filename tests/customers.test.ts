@@ -39,7 +39,7 @@ describe('porta da equipe', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(await res.text()).toContain('estiver na equipe deste salão')
+    expect(await res.text()).toContain('estiver na equipe deste negócio')
     expect(s.notifier.sent).toHaveLength(0)
   })
 
