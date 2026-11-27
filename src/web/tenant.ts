@@ -52,7 +52,7 @@ export async function resolveTenant(
 export function tenantMiddleware(repo: CompanyRepo): MiddlewareHandler<TenantEnv> {
   return async (c: Context<TenantEnv>, next) => {
     const resolved = await resolveTenant(repo, c.req.header('host') ?? '')
-    if (!resolved) return c.text('Salão não encontrado para este endereço.', 404)
+    if (!resolved) return c.text('Negócio não encontrado para este endereço.', 404)
     c.set('company', resolved.company)
     c.set('area', resolved.area)
     await next()
