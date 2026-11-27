@@ -120,7 +120,7 @@ export function staffMiddleware(auth: Auth, db: Db): MiddlewareHandler<StaffEnv>
 export function requireOwner(): MiddlewareHandler<StaffEnv> {
   return async (c, next) => {
     if (c.get('staff').role !== 'owner') {
-      return c.text('Só o dono do salão acessa esta área.', 403)
+      return c.text('Só o dono do negócio acessa esta área.', 403)
     }
     await next()
   }
