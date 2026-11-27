@@ -256,7 +256,11 @@ export function teamRoutes({ db, auth }: Deps) {
       parsed.role !== 'owner' &&
       (await providerRepo.countOtherOwners(company.id, id)) === 0
     ) {
-      return peopleView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
+      return peopleView(
+        c,
+        { error: 'O negócio precisa de pelo menos um dono.', editingId: id },
+        422,
+      )
     }
 
     await providerRepo.update(company.id, id, parsed)
@@ -285,7 +289,11 @@ export function teamRoutes({ db, auth }: Deps) {
       existing.role === 'owner' &&
       (await providerRepo.countOtherOwners(company.id, id)) === 0
     ) {
-      return peopleView(c, { error: 'O salão precisa de pelo menos um dono.', editingId: id }, 422)
+      return peopleView(
+        c,
+        { error: 'O negócio precisa de pelo menos um dono.', editingId: id },
+        422,
+      )
     }
 
     await providerRepo.setActive(company.id, id, active)
