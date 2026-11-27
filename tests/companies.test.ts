@@ -92,7 +92,7 @@ describe('criar salão', () => {
       'já está em uso',
     )
     expect(errorOf(await createCompany(db, { ...base, slug: 'outro' }))).toContain(
-      'Já existe um salão em',
+      'Já existe um negócio em',
     )
   })
 
@@ -163,7 +163,7 @@ describe('editar salão', () => {
         timezone: 'America/Sao_Paulo',
       }),
     )
-    expect(error).toContain('Já existe um salão em')
+    expect(error).toContain('Já existe um negócio em')
   })
 
   it('o salão passa a responder no endereço novo', async () => {

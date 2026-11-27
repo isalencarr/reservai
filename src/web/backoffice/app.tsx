@@ -141,7 +141,7 @@ export function backofficeApp({ db, auth }: Deps) {
     const html = c.req.header('HX-Request') ? (
       <Companies {...view} />
     ) : (
-      <BackofficeLayout title="Salões" admin={c.get('admin')} active="companies">
+      <BackofficeLayout title="Negócios" admin={c.get('admin')} active="companies">
         <Companies {...view} />
       </BackofficeLayout>
     )
