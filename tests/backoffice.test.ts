@@ -188,7 +188,7 @@ describe('salões pelo backoffice', () => {
     const res = await s.send('/saloes', { ...fresh, host: 'beleza-pura.localhost' })
 
     expect(res.status).toBe(422)
-    expect(await res.text()).toContain('Já existe um salão em')
+    expect(await res.text()).toContain('Já existe um negócio em')
     expect(await s.db.select().from(companies)).toHaveLength(2)
   })
 

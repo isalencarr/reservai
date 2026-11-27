@@ -33,8 +33,8 @@ function companyFields(input: CompanyIdentity): CompanyFields | PlatformError {
   const slug = slugify(input.slug?.trim() || input.name)
   const timezone = input.timezone?.trim() || DEFAULT_TIMEZONE
 
-  if (!name) return { error: 'Informe o nome do salão.' }
-  if (!host) return { error: 'Informe o endereço, por exemplo: beleza-pura.com.br.' }
+  if (!name) return { error: 'Informe o nome do negócio.' }
+  if (!host) return { error: 'Informe o endereço, por exemplo: negocio-exemplo.com.br.' }
   if (host.startsWith(STAFF_PREFIX)) {
     return {
       error: `Informe o endereço do cliente, sem "${STAFF_PREFIX}": a equipe entra em ${host}.`,
@@ -61,7 +61,7 @@ async function alreadyTaken(
   const repo = createCompanyRepo(db)
 
   const byHost = await repo.findByHost(fields.host)
-  if (byHost && byHost.id !== except) return { error: `Já existe um salão em ${fields.host}.` }
+  if (byHost && byHost.id !== except) return { error: `Já existe um negócio em ${fields.host}.` }
 
   const bySlug = await repo.findBySlug(fields.slug)
   if (bySlug && bySlug.id !== except) {
@@ -93,7 +93,7 @@ export async function createCompany(
   if (conflict) return conflict
 
   const [company] = await db.insert(companies).values(fields).returning()
-  if (!company) return { error: 'Não foi possível criar o salão.' }
+  if (!company) return { error: 'Não foi possível criar o negócio.' }
 
   // A assinatura nasce junto e sem pagamento registrado: salão novo entra na
   // lista como pendente de cobrança, que não é o mesmo que vencido.
@@ -133,5 +133,5 @@ export async function updateCompany(
   if (conflict) return conflict
 
   const updated = await createCompanyRepo(db).update(id, fields)
-  return updated ?? { error: 'Salão não encontrado.' }
+  return updated ?? { error: 'Negócio não encontrado.' }
 }

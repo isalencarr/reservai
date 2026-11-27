@@ -88,8 +88,8 @@ const SupportBlock: FC<{ row: CompanyRow }> = ({ row: { company, support } }) =>
   ) : (
     <form class="service-form" hx-post={`/saloes/${company.id}/suporte`}>
       <p class="muted">
-        Abre uma janela de 2 horas para você olhar este salão. Fica registrado no log de acessos do
-        dono.
+        Abre uma janela de 2 horas para você olhar este negócio. Fica registrado no log de acessos
+        do dono.
       </p>
       <div class="actions">
         <button type="submit" class="btn tonal">
@@ -107,7 +107,7 @@ const Fields: FC<{ company?: Company }> = ({ company }) => (
         type="text"
         name={WIRE.name}
         required
-        placeholder="Beleza Pura"
+        placeholder="Nome do negócio"
         value={company?.name ?? ''}
       />
     </label>
@@ -117,7 +117,7 @@ const Fields: FC<{ company?: Company }> = ({ company }) => (
         type="text"
         name={WIRE.host}
         required
-        placeholder="beleza-pura.com.br"
+        placeholder="endereco-do-negocio.com.br"
         value={company?.host ?? ''}
       />
     </label>
@@ -232,7 +232,7 @@ const EditRow: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
         <Fields company={row.company} />
         <p class="muted">
           Cliente em {row.company.host}, equipe em {STAFF_PREFIX}
-          {row.company.host}. Mudar o endereço muda onde o salão atende: quem tiver o link antigo
+          {row.company.host}. Mudar o endereço muda onde o negócio atende: quem tiver o link antigo
           não acha mais.
         </p>
         <div class="actions">
@@ -254,11 +254,11 @@ const EditRow: FC<{ row: CompanyRow; error?: string }> = ({ row, error }) => (
 
 export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) => (
   <section id="companies" hx-target="#companies" hx-swap="outerHTML">
-    <h2>Salões</h2>
+    <h2>Negócios</h2>
 
     <div class="catalog-layout">
       <form class="card service-form" hx-post="/saloes">
-        <strong>Novo salão</strong>
+        <strong>Novo negócio</strong>
         {error && !editing ? <p class="error">{error}</p> : null}
         <Fields />
         <fieldset class="team">
@@ -269,7 +269,7 @@ export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) =>
           </label>
           <label>
             E-mail
-            <input type="email" name={WIRE.email} required placeholder="carla@salao.com.br" />
+            <input type="email" name={WIRE.email} required placeholder="contato@negocio.com.br" />
           </label>
           <label>
             Telefone
@@ -278,14 +278,14 @@ export const Companies: FC<CompaniesProps> = ({ items, editing, error, now }) =>
         </fieldset>
         <button type="submit" class="btn filled">
           <Icon name="add" />
-          Criar salão
+          Criar negócio
         </button>
       </form>
 
       <aside class="card catalog">
         <strong>{items.length} em operação</strong>
         {items.length === 0 ? (
-          <p class="muted">Nenhum salão ainda.</p>
+          <p class="muted">Nenhum negócio ainda.</p>
         ) : (
           <ul>
             {items.map((row) => (
