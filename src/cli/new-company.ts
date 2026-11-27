@@ -21,9 +21,9 @@ const { values } = parseArgs({
 
 if (!values.nome || !values.host || !values.dono || !values.email || !values.telefone) {
   console.error(
-    'uso: bun run salao:novo --nome "Beleza Pura" --host beleza-pura.com.br \\\n' +
-      '       --dono "Carla Mendes" --email carla@salao.com.br --telefone 11988880001 \\\n' +
-      '       [--slug beleza-pura] [--fuso America/Sao_Paulo]',
+    'uso: bun run negocio:novo --nome "Negócio Exemplo" --host negocio-exemplo.com.br \\\n' +
+      '       --dono "Nome Sobrenome" --email contato@negocio-exemplo.com.br --telefone 11988880001 \\\n' +
+      '       [--slug negocio-exemplo] [--fuso America/Sao_Paulo]',
   )
   process.exit(1)
 }
@@ -44,7 +44,7 @@ if ('error' in result) {
   process.exit(1)
 }
 
-console.log(`salão "${result.company.name}" criado`)
+console.log(`negócio "${result.company.name}" criado`)
 console.log(`  clientes: https://${result.company.host}`)
 console.log(`  staff:   https://${STAFF_PREFIX}${result.company.host}`)
 console.log(
